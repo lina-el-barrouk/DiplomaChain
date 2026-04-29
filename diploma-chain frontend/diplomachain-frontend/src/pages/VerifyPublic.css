@@ -1,0 +1,206 @@
+.verify-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.verify-bg {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-0);
+  z-index: 0;
+}
+
+.verify-glow {
+  position: absolute;
+  top: -10%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 700px;
+  height: 500px;
+  background: radial-gradient(ellipse, rgba(201,168,76,0.06) 0%, transparent 65%);
+}
+
+.verify-container {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 600px;
+}
+
+.back-btn { margin-bottom: 24px; }
+
+.verify-header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.verify-logo-mark {
+  width: 48px;
+  height: 48px;
+  background: var(--gold);
+  color: var(--bg-0);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+  margin: 0 auto 16px;
+}
+
+.verify-title {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--text-1);
+  margin-bottom: 8px;
+}
+
+.verify-sub {
+  font-size: 14px;
+  color: var(--text-3);
+}
+
+.verify-form {
+  margin-bottom: 16px;
+}
+
+.verify-input-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.verify-input-row .input { flex: 1; }
+
+/* Results */
+.verify-result {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.result-valid { border-color: rgba(46,204,113,0.3); }
+.result-revoked { border-color: rgba(231,76,60,0.3); }
+.result-invalid { border-color: rgba(243,156,18,0.3); }
+
+.result-icon-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.icon-success { color: #2ecc71; }
+.icon-danger { color: #e74c3c; }
+.icon-warning { color: #f39c12; }
+
+.result-status {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.result-reason {
+  font-size: 14px;
+  color: var(--text-3);
+  margin-top: 4px;
+}
+
+.result-details {
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+}
+
+.result-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.result-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.result-field-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+  font-weight: 600;
+}
+
+.result-field-value {
+  font-size: 14px;
+  color: var(--text-1);
+}
+
+.result-mention { color: var(--gold); font-weight: 500; }
+
+.blockchain-section {
+  background: var(--bg-1);
+  border-radius: var(--radius);
+  padding: 14px;
+}
+
+.blockchain-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
+}
+
+.blockchain-status {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.anchored { color: #2ecc71; }
+.not-anchored { color: #f39c12; }
+
+.blockchain-tx {
+  font-size: 11px;
+  color: var(--text-3);
+  word-break: break-all;
+}
+
+.revoke-info {
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.history-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.history-row:last-child { border-bottom: none; }
+
+.verify-error {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #e74c3c;
+  border-color: rgba(231,76,60,0.3);
+  font-size: 14px;
+}
