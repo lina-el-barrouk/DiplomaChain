@@ -7,7 +7,7 @@ POST /auth/logout     → révocation du token (blacklist)
 GET  /auth/verify-email/{token} → vérification email
 """
 from datetime import datetime, timedelta, timezone
-
+from app.core.security import encrypt_sensitive
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
@@ -51,7 +51,7 @@ def register(payload: UserRegister, db: Session = Depends(get_db)):
     # Créer profil étudiant automatiquement
     if payload.role == "student" and payload.student:
         from app.models.models import Student
-        student = app.models.models.Student(
+        student = Student(
             user_id=user.id,
             full_name_enc=encrypt_sensitive(payload.student.full_name),
             national_id_enc=encrypt_sensitive(payload.student.national_id),

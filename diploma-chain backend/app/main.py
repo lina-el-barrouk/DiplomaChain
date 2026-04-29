@@ -9,9 +9,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.errors import RateLimitExceeded
-from slowapi.util import get_remote_address
+# from slowapi import Limiter, _rate_limit_exceeded_handler
+# from slowapi.errors import RateLimitExceeded
+# from slowapi.util import get_remote_address
 
 from app.api.v1.endpoints.admin import router as admin_router
 from app.api.v1.endpoints.auth import router as auth_router
@@ -30,11 +30,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger("diplomachain")
 
-limiter = Limiter(
-    key_func=get_remote_address,
-    default_limits=[f"{settings.MAX_REQUESTS_PER_MINUTE}/minute"],
-    storage_uri=settings.REDIS_URL,
-)
+# limiter = Limiter(
+#     key_func=get_remote_address,
+#     default_limits=[f"{settings.MAX_REQUESTS_PER_MINUTE}/minute"],
+#     storage_uri=settings.REDIS_URL,
+# )
 
 
 @asynccontextmanager
@@ -54,8 +54,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+# app.state.limiter = limiter
+# app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
