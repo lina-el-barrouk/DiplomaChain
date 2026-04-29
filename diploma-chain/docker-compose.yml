@@ -1,0 +1,98 @@
+version: "3.9"
+
+services:
+  # ── API FastAPI ─────────────────────────────────────────────────────────────
+  api:
+    build: .
+    container_name: diplomachain_api
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - diplomachain_net
+    volumes:
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── MySQL 8 ─────────────────────────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    container_name: diplomachain_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-change_root_password}
+      MYSQL_DATABASE: ${DB_NAME:-diplomachain}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - diplomachain_net
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-p${DB_ROOT_PASSWORD:-change_root_password}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --default-authentication-plugin=caching_sha2_password
+      --ssl-mode=REQUIRED
+
+  # ── Redis (rate limiting + Celery) ─────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: diplomachain_redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD:-change_redis_password} --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - diplomachain_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ── Celery Worker (tâches asynchrones) ────────────────────────────────────
+  celery_worker:
+    build: .
+    container_name: diplomachain_celery
+    restart: unless-stopped
+    env_file: .env
+    command: celery -A app.worker worker --loglevel=info --concurrency=4
+    depends_on:
+      - redis
+      - mysql
+    networks:
+      - diplomachain_net
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  diplomachain_net:
+    driver: bridge
