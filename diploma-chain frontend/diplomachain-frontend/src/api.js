@@ -87,6 +87,15 @@ export const pdfApi = {
     return api.post('/pdf/templates/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
   },
   getTemplate: () => api.get('/pdf/templates/me'),
+  getBulkTemplate: () => api.get('/pdf/diplomas/bulk-template', { responseType: 'blob' }),
+  bulkGenerate: (file) => {
+    const fd = new FormData()
+    fd.append('file', file)
+    return api.post('/pdf/diplomas/bulk-generate', fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      responseType: 'blob',
+    })
+  },
 }
 
 // Admin

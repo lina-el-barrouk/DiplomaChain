@@ -9,7 +9,7 @@ DELETE /admin/tokens/cleanup → purger les tokens expirés de la blacklist
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -30,10 +30,21 @@ class UserAdminOut(BaseModel):
     role: str
     is_active: bool
     is_verified: bool
-    created_at: datetime
+    created_at: datetime | None
     last_login: datetime | None
 
     model_config = {"from_attributes": True}
+
+    @field_validator("created_at", "last_login", mode="before")
+    @classmethod
+    def sanitize_zero_date(cls, v):
+        """MySQL stocke parfois '0000-00-00 00:00:00' comme date invalide.
+        Pydantic ne peut pas parser cette valeur → on la remplace par None."""
+        if v is None:
+            return None
+        if isinstance(v, str) and v.startswith("0000"):
+            return None
+        return v
 
 
 class StatsOut(BaseModel):

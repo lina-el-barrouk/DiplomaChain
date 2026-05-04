@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
 import { diplomaApi, pdfApi, qrApi } from '../../api'
-import { Plus, Send, XCircle, Download, QrCode, RefreshCw, Search } from 'lucide-react'
+import { Plus, Send, XCircle, Download, QrCode, RefreshCw, Search, FileSpreadsheet, UploadCloud, CheckCircle, AlertCircle, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function InstitutionDiplomas() {
@@ -12,17 +12,20 @@ export default function InstitutionDiplomas() {
   const [revokeReason, setRevokeReason] = useState('')
   const [qrModal, setQrModal] = useState(null)
   const [search, setSearch] = useState('')
-  const [form, setForm] = useState({
-    student_id: '', degree_title: '', field_of_study: '',
-    graduation_date: '', honors: ''
-  })
+  const [form, setForm] = useState({ student_id: '', degree_title: '', field_of_study: '', graduation_date: '', honors: '' })
+
+  // Bulk state
+  const [showBulk, setShowBulk] = useState(false)
+  const [bulkFile, setBulkFile] = useState(null)
+  const [bulkDragging, setBulkDragging] = useState(false)
+  const [bulkLoading, setBulkLoading] = useState(false)
+  const [bulkResults, setBulkResults] = useState(null) // { success, total, errors }
+  const bulkInputRef = useRef()
 
   const load = async () => {
     setLoading(true)
-    try {
-      const { data } = await diplomaApi.list()
-      setDiplomas(data)
-    } catch { toast.error('Erreur de chargement') }
+    try { const { data } = await diplomaApi.list(); setDiplomas(data) }
+    catch { toast.error('Erreur de chargement') }
     finally { setLoading(false) }
   }
 
@@ -31,10 +34,7 @@ export default function InstitutionDiplomas() {
   const create = async (e) => {
     e.preventDefault()
     try {
-      await diplomaApi.create({
-        ...form,
-        graduation_date: new Date(form.graduation_date).toISOString(),
-      })
+      await diplomaApi.create({ ...form, graduation_date: new Date(form.graduation_date).toISOString() })
       toast.success('Diplôme créé ✓')
       setShowCreate(false)
       setForm({ student_id: '', degree_title: '', field_of_study: '', graduation_date: '', honors: '' })
@@ -43,11 +43,8 @@ export default function InstitutionDiplomas() {
   }
 
   const issue = async (id) => {
-    try {
-      await diplomaApi.issue(id)
-      toast.success('Diplôme émis et ancré sur Hedera ⛓')
-      load()
-    } catch (e) { toast.error(e.response?.data?.detail || 'Erreur') }
+    try { await diplomaApi.issue(id); toast.success('Diplôme émis ⛓'); load() }
+    catch (e) { toast.error(e.response?.data?.detail || 'Erreur') }
   }
 
   const revoke = async () => {
@@ -55,9 +52,7 @@ export default function InstitutionDiplomas() {
     try {
       await diplomaApi.revoke(showRevoke, revokeReason)
       toast.success('Diplôme révoqué')
-      setShowRevoke(null)
-      setRevokeReason('')
-      load()
+      setShowRevoke(null); setRevokeReason(''); load()
     } catch (e) { toast.error(e.response?.data?.detail || 'Erreur') }
   }
 
@@ -65,20 +60,77 @@ export default function InstitutionDiplomas() {
     try {
       const { data } = await pdfApi.generate(id)
       const url = URL.createObjectURL(new Blob([data], { type: 'application/pdf' }))
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `diplome-${code}.pdf`
-      a.click()
+      const a = document.createElement('a'); a.href = url; a.download = `diplome-${code}.pdf`; a.click()
       URL.revokeObjectURL(url)
-    } catch { toast.error('Erreur lors de la génération du PDF') }
+    } catch { toast.error('Erreur PDF') }
   }
 
   const showQr = async (id) => {
-    try {
-      const { data } = await qrApi.getBase64(id)
-      setQrModal(data)
-    } catch { toast.error('Erreur QR code') }
+    try { const { data } = await qrApi.getBase64(id); setQrModal(data) }
+    catch { toast.error('Erreur QR code') }
   }
+
+  // ── Bulk helpers ──────────────────────────────────────────────────────────
+  const downloadTemplate = async () => {
+    try {
+      const { data } = await pdfApi.getBulkTemplate()
+      const url = URL.createObjectURL(new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }))
+      const a = document.createElement('a'); a.href = url; a.download = 'template_diplomes_masse.xlsx'; a.click()
+      URL.revokeObjectURL(url)
+    } catch { toast.error('Impossible de télécharger le template') }
+  }
+
+  const handleBulkDrop = (e) => {
+    e.preventDefault(); setBulkDragging(false)
+    const f = e.dataTransfer.files[0]
+    if (f && (f.name.endsWith('.xlsx') || f.name.endsWith('.xls'))) setBulkFile(f)
+    else toast.error('Fichier Excel (.xlsx) requis')
+  }
+
+  const handleBulkGenerate = async () => {
+    if (!bulkFile) { toast.error('Sélectionnez un fichier Excel'); return }
+    setBulkLoading(true); setBulkResults(null)
+    try {
+      const resp = await pdfApi.bulkGenerate(bulkFile)
+      const successCount = parseInt(resp.headers['x-success-count'] || '0')
+      const totalCount   = parseInt(resp.headers['x-total-count']   || '0')
+
+      // Télécharger le ZIP
+      const url = URL.createObjectURL(new Blob([resp.data], { type: 'application/zip' }))
+      const a = document.createElement('a'); a.href = url; a.download = 'diplomes_masse.zip'; a.click()
+      URL.revokeObjectURL(url)
+
+      setBulkResults({ success: successCount, total: totalCount, errors: totalCount - successCount })
+      toast.success(`${successCount} diplôme(s) généré(s) avec succès !`)
+      load()
+    } catch (err) {
+      // Avec responseType:'blob', l'erreur HTTP est aussi un Blob → il faut la lire comme texte JSON
+      let detail = null
+      try {
+        if (err.response?.data instanceof Blob) {
+          const text = await err.response.data.text()
+          const parsed = JSON.parse(text)
+          detail = parsed.detail
+        } else {
+          detail = err.response?.data?.detail
+        }
+      } catch { /* ignore parse errors */ }
+
+      if (detail?.rapport) {
+        const allRows   = detail.rapport
+        const errRows   = allRows.filter(r => r.statut === 'erreur')
+        const okRows    = allRows.filter(r => r.statut === 'succès')
+        setBulkResults({ success: okRows.length, total: allRows.length, errors: errRows.length, errorList: errRows })
+        toast.error(detail.message || 'Aucun diplôme généré')
+      } else {
+        const msg = typeof detail === 'string' ? detail : 'Erreur lors de la génération'
+        toast.error(msg)
+        setBulkResults({ success: 0, total: 0, errors: 0, errorList: [{ ligne: '?', email: '', message: msg }] })
+      }
+    } finally { setBulkLoading(false) }
+  }
+
+  const closeBulk = () => { setShowBulk(false); setBulkFile(null); setBulkResults(null) }
 
   const filtered = diplomas.filter(d =>
     d.unique_code.includes(search.toUpperCase()) ||
@@ -94,7 +146,10 @@ export default function InstitutionDiplomas() {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn btn-ghost btn-sm" onClick={load}><RefreshCw size={14} /></button>
-          <button className="btn btn-primary" onClick={() => setShowCreate(true)}>
+          <button className="btn btn-ghost" onClick={() => setShowBulk(true)} id="btn-bulk-generate">
+            <FileSpreadsheet size={16} /> Génération en masse
+          </button>
+          <button className="btn btn-primary" onClick={() => setShowCreate(true)} id="btn-new-diploma">
             <Plus size={16} /> Nouveau diplôme
           </button>
         </div>
@@ -103,13 +158,8 @@ export default function InstitutionDiplomas() {
       {/* Search */}
       <div style={{ position: 'relative', marginBottom: 20 }}>
         <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)' }} />
-        <input
-          className="input"
-          style={{ paddingLeft: 38 }}
-          placeholder="Rechercher par code ou titre..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
+        <input className="input" style={{ paddingLeft: 38 }} placeholder="Rechercher par code ou titre..."
+          value={search} onChange={e => setSearch(e.target.value)} />
       </div>
 
       <div className="card">
@@ -118,7 +168,7 @@ export default function InstitutionDiplomas() {
         ) : filtered.length === 0 ? (
           <div className="empty-state">
             <h3>Aucun diplôme</h3>
-            <p style={{ marginTop: 8 }}>Cliquez sur "Nouveau diplôme" pour commencer</p>
+            <p style={{ marginTop: 8 }}>Cliquez sur "Nouveau diplôme" ou utilisez la "Génération en masse"</p>
           </div>
         ) : (
           <table className="table">
@@ -135,30 +185,18 @@ export default function InstitutionDiplomas() {
                       {d.status === 'issued' ? '✓ Émis' : d.status === 'revoked' ? '✗ Révoqué' : '⏳ En attente'}
                     </span>
                   </td>
-                  <td>
-                    {d.blockchain_anchored
-                      ? <span className="badge badge-gold">⛓ Ancré</span>
-                      : <span style={{ color: 'var(--text-3)', fontSize: 12 }}>—</span>}
-                  </td>
+                  <td>{d.blockchain_anchored ? <span className="badge badge-gold">⛓ Ancré</span> : <span style={{ color: 'var(--text-3)', fontSize: 12 }}>—</span>}</td>
                   <td style={{ fontSize: 12 }}>{new Date(d.created_at).toLocaleDateString('fr-FR')}</td>
                   <td>
                     <div style={{ display: 'flex', gap: 6 }}>
                       {d.status === 'pending' && (
-                        <button className="btn btn-success btn-sm" onClick={() => issue(d.id)}>
-                          <Send size={13} /> Émettre
-                        </button>
+                        <button className="btn btn-success btn-sm" onClick={() => issue(d.id)}><Send size={13} /> Émettre</button>
                       )}
                       {d.status === 'issued' && (
                         <>
-                          <button className="btn btn-ghost btn-sm" onClick={() => downloadPdf(d.id, d.unique_code)} title="Télécharger PDF">
-                            <Download size={13} />
-                          </button>
-                          <button className="btn btn-ghost btn-sm" onClick={() => showQr(d.id)} title="QR Code">
-                            <QrCode size={13} />
-                          </button>
-                          <button className="btn btn-danger btn-sm" onClick={() => setShowRevoke(d.id)}>
-                            <XCircle size={13} /> Révoquer
-                          </button>
+                          <button className="btn btn-ghost btn-sm" onClick={() => downloadPdf(d.id, d.unique_code)} title="PDF"><Download size={13} /></button>
+                          <button className="btn btn-ghost btn-sm" onClick={() => showQr(d.id)} title="QR"><QrCode size={13} /></button>
+                          <button className="btn btn-danger btn-sm" onClick={() => setShowRevoke(d.id)}><XCircle size={13} /> Révoquer</button>
                         </>
                       )}
                     </div>
@@ -169,6 +207,117 @@ export default function InstitutionDiplomas() {
           </table>
         )}
       </div>
+
+      {/* ── Bulk Modal ───────────────────────────────────────────────────────── */}
+      {showBulk && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
+          <div className="card" style={{ width: '100%', maxWidth: 600, padding: 32, position: 'relative' }}>
+            <button onClick={closeBulk} style={{ position: 'absolute', top: 16, right: 16, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)' }}><X size={20} /></button>
+
+            <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6, color: 'var(--text-1)' }}>
+              <FileSpreadsheet size={20} style={{ marginRight: 8, verticalAlign: 'middle', color: 'var(--gold)' }} />
+              Génération en masse
+            </h3>
+            <p style={{ color: 'var(--text-3)', fontSize: 13, marginBottom: 24 }}>
+              Uploadez un fichier Excel (.xlsx) contenant les données des étudiants.<br />
+              Un PDF de diplôme sera généré pour chaque ligne valide, et vous recevrez un ZIP.
+            </p>
+
+            {/* Colonnes attendues */}
+            <div style={{ background: 'var(--bg-2)', borderRadius: 8, padding: '10px 14px', marginBottom: 20, fontSize: 12, color: 'var(--text-2)' }}>
+              <strong style={{ color: 'var(--text-1)' }}>Colonnes requises :</strong>
+              <span style={{ marginLeft: 8, color: 'var(--gold)' }}>email_etudiant</span>
+              <span style={{ color: 'var(--text-3)' }}> · </span>
+              <span style={{ color: 'var(--gold)' }}>titre_diplome</span>
+              <span style={{ color: 'var(--text-3)' }}> · </span>
+              <span style={{ color: 'var(--gold)' }}>domaine</span>
+              <span style={{ color: 'var(--text-3)' }}> · </span>
+              <span style={{ color: 'var(--gold)' }}>date_graduation</span>
+              <span style={{ color: 'var(--text-3)' }}> · </span>
+              <span>mention <em>(optionnel)</em></span>
+            </div>
+
+            {/* Download template */}
+            <button className="btn btn-ghost" style={{ marginBottom: 20, width: '100%', justifyContent: 'center', borderStyle: 'dashed' }}
+              onClick={downloadTemplate} id="btn-download-template">
+              <Download size={15} /> Télécharger le fichier modèle (.xlsx)
+            </button>
+
+            {/* Drop zone */}
+            <div
+              id="bulk-drop-zone"
+              onDragOver={e => { e.preventDefault(); setBulkDragging(true) }}
+              onDragLeave={() => setBulkDragging(false)}
+              onDrop={handleBulkDrop}
+              onClick={() => bulkInputRef.current?.click()}
+              style={{
+                border: `2px dashed ${bulkDragging ? 'var(--gold)' : bulkFile ? 'var(--success, #4ade80)' : 'var(--border)'}`,
+                borderRadius: 10,
+                padding: '32px 20px',
+                textAlign: 'center',
+                cursor: 'pointer',
+                transition: 'all .2s',
+                background: bulkDragging ? 'rgba(201,168,76,0.06)' : 'var(--bg-2)',
+                marginBottom: 20,
+              }}>
+              <input ref={bulkInputRef} type="file" accept=".xlsx,.xls" style={{ display: 'none' }}
+                onChange={e => { const f = e.target.files[0]; if (f) setBulkFile(f) }} />
+              <UploadCloud size={36} style={{ color: bulkFile ? 'var(--success, #4ade80)' : 'var(--text-3)', marginBottom: 8 }} />
+              {bulkFile ? (
+                <>
+                  <p style={{ color: 'var(--text-1)', fontWeight: 600 }}>{bulkFile.name}</p>
+                  <p style={{ color: 'var(--text-3)', fontSize: 12, marginTop: 4 }}>{(bulkFile.size / 1024).toFixed(1)} Ko — Cliquez pour changer</p>
+                </>
+              ) : (
+                <>
+                  <p style={{ color: 'var(--text-2)' }}>Glissez votre fichier Excel ici</p>
+                  <p style={{ color: 'var(--text-3)', fontSize: 12, marginTop: 4 }}>ou cliquez pour parcourir</p>
+                </>
+              )}
+            </div>
+
+            {/* Results */}
+            {bulkResults && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ display: 'flex', gap: 12, marginBottom: bulkResults.errorList ? 12 : 0 }}>
+                  <div style={{ flex: 1, background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: 8, padding: '12px 16px', textAlign: 'center' }}>
+                    <CheckCircle size={18} style={{ color: '#4ade80' }} />
+                    <p style={{ fontSize: 22, fontWeight: 700, color: '#4ade80', margin: '4px 0' }}>{bulkResults.success}</p>
+                    <p style={{ fontSize: 12, color: 'var(--text-3)' }}>Succès</p>
+                  </div>
+                  <div style={{ flex: 1, background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 8, padding: '12px 16px', textAlign: 'center' }}>
+                    <AlertCircle size={18} style={{ color: '#f87171' }} />
+                    <p style={{ fontSize: 22, fontWeight: 700, color: '#f87171', margin: '4px 0' }}>{bulkResults.errors}</p>
+                    <p style={{ fontSize: 12, color: 'var(--text-3)' }}>Erreurs</p>
+                  </div>
+                  <div style={{ flex: 1, background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: 8, padding: '12px 16px', textAlign: 'center' }}>
+                    <p style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-1)', margin: '4px 0' }}>{bulkResults.total}</p>
+                    <p style={{ fontSize: 12, color: 'var(--text-3)' }}>Total lignes</p>
+                  </div>
+                </div>
+                {bulkResults.errorList && bulkResults.errorList.length > 0 && (
+                  <div style={{ background: 'rgba(248,113,113,0.07)', border: '1px solid rgba(248,113,113,0.2)', borderRadius: 8, padding: 12, maxHeight: 150, overflowY: 'auto' }}>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: '#f87171', marginBottom: 6 }}>Détail des erreurs :</p>
+                    {bulkResults.errorList.map((e, i) => (
+                      <p key={i} style={{ fontSize: 11, color: 'var(--text-2)', margin: '2px 0' }}>
+                        <span style={{ color: 'var(--text-3)' }}>Ligne {e.ligne} · {e.email || '—'}</span> — {e.message}
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleBulkGenerate}
+                disabled={!bulkFile || bulkLoading} id="btn-bulk-submit">
+                {bulkLoading ? 'Génération en cours...' : <><UploadCloud size={15} /> Générer les diplômes</>}
+              </button>
+              <button className="btn btn-ghost" onClick={closeBulk}>Fermer</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create Modal */}
       {showCreate && (
@@ -200,11 +349,8 @@ export default function InstitutionDiplomas() {
                 <label className="input-label">Mention</label>
                 <select className="input" value={form.honors} onChange={e => setForm(f => ({ ...f, honors: e.target.value }))}>
                   <option value="">Aucune mention</option>
-                  <option value="Passable">Passable</option>
-                  <option value="Assez Bien">Assez Bien</option>
-                  <option value="Bien">Bien</option>
-                  <option value="Très Bien">Très Bien</option>
-                  <option value="Excellent">Excellent</option>
+                  <option>Passable</option><option>Assez Bien</option><option>Bien</option>
+                  <option>Très Bien</option><option>Excellent</option>
                 </select>
               </div>
               <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
@@ -221,9 +367,8 @@ export default function InstitutionDiplomas() {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div className="card" style={{ width: 420, padding: 28 }}>
             <h3 style={{ marginBottom: 16, color: 'var(--text-1)' }}>Révoquer le diplôme</h3>
-            <textarea className="input" placeholder="Motif de révocation (minimum 10 caractères)..."
-              value={revokeReason} onChange={e => setRevokeReason(e.target.value)}
-              rows={4} style={{ resize: 'vertical', marginBottom: 16 }} />
+            <textarea className="input" placeholder="Motif de révocation..." value={revokeReason}
+              onChange={e => setRevokeReason(e.target.value)} rows={4} style={{ resize: 'vertical', marginBottom: 16 }} />
             <div style={{ display: 'flex', gap: 10 }}>
               <button className="btn btn-danger" onClick={revoke}>Confirmer la révocation</button>
               <button className="btn btn-ghost" onClick={() => { setShowRevoke(null); setRevokeReason('') }}>Annuler</button>

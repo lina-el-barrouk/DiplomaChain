@@ -5,6 +5,7 @@ POST /pdf/templates/positions  → configurer les positions des champs
 GET  /pdf/diplomas/{id}/generate → générer le PDF d'un diplôme
 GET  /pdf/templates/preview    → prévisualiser le template
 """
+import io
 import json
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import Response
@@ -153,6 +154,292 @@ def update_positions(
         "message": "Positions mises à jour",
         "positions": existing,
     }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# TEMPLATE EXCEL POUR GÉNÉRATION EN MASSE
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.get("/diplomas/bulk-template")
+def download_bulk_template(
+    current_user: User = Depends(require_approved_institution),
+):
+    """
+    Télécharge le fichier Excel modèle (.xlsx) à remplir pour la génération en masse.
+    Colonnes : email_etudiant | titre_diplome | domaine | date_graduation | mention
+    """
+    from openpyxl import Workbook
+    from openpyxl.styles import Alignment, Font, PatternFill
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Diplômes"
+
+    COLUMNS = [
+        ("email_etudiant",  "Email de l'étudiant (doit exister dans le système)"),
+        ("titre_diplome",   "Titre du diplôme (ex : Master en Informatique)"),
+        ("domaine",         "Domaine d'études (ex : Intelligence Artificielle)"),
+        ("date_graduation", "Date de graduation (AAAA-MM-JJ ou JJ/MM/AAAA)"),
+        ("mention",         "Mention : Passable / Assez Bien / Bien / Très Bien / Excellent (optionnel)"),
+    ]
+
+    header_font  = Font(bold=True, color="FFFFFF", size=11)
+    header_fill  = PatternFill(start_color="1A1A2E", end_color="1A1A2E", fill_type="solid")
+    center_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+
+    # En-têtes
+    for col_idx, (col_key, col_desc) in enumerate(COLUMNS, start=1):
+        cell = ws.cell(row=1, column=col_idx, value=col_key)
+        cell.font  = header_font
+        cell.fill  = header_fill
+        cell.alignment = center_align
+        ws.column_dimensions[cell.column_letter].width = 30
+
+    # Ligne d'exemple
+    ws.append([
+        "etudiant@exemple.com",
+        "Master en Informatique",
+        "Intelligence Artificielle",
+        "2024-06-30",
+        "Très Bien",
+    ])
+    ws.row_dimensions[1].height = 28
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+
+    return Response(
+        content=buf.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=template_diplomes_masse.xlsx"},
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GÉNÉRATION EN MASSE DEPUIS UN FICHIER EXCEL
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.post("/diplomas/bulk-generate")
+async def bulk_generate_diplomas(
+    file: UploadFile = File(..., description="Fichier Excel .xlsx (max 10 Mo)"),
+    current_user: User = Depends(require_approved_institution),
+    db: Session = Depends(get_db),
+):
+    """
+    Génère les diplômes en masse depuis un fichier Excel.
+
+    Pour chaque ligne valide :
+      1. Cherche l'étudiant par email (doit être enregistré et approuvé)
+      2. Crée le diplôme (pending) puis l'émet immédiatement
+      3. Génère le PDF (avec template si disponible, sinon fond par défaut)
+
+    Retourne un fichier ZIP contenant :
+      - Un PDF par diplôme : diplome_<email>_<code>.pdf
+      - Un rapport : rapport.csv
+    """
+    import csv
+    import zipfile
+    from datetime import datetime, timezone
+
+    from openpyxl import load_workbook
+
+    from app.core.security import decrypt_sensitive
+    from app.models.models import User as UserModel
+    from app.schemas.diploma import DiplomaCreate
+    from app.services.diploma_service import create_diploma, generate_unique_code
+
+    # ── Validation du fichier ──────────────────────────────────────────────
+    if not (file.filename or "").lower().endswith((".xlsx", ".xls")):
+        raise HTTPException(400, "Seuls les fichiers Excel (.xlsx / .xls) sont acceptés")
+
+    raw = await file.read()
+    if len(raw) > 10 * 1024 * 1024:
+        raise HTTPException(413, "Fichier trop volumineux (max 10 Mo)")
+
+    try:
+        wb = load_workbook(io.BytesIO(raw), data_only=True)
+        ws = wb.active
+    except Exception as exc:
+        raise HTTPException(400, f"Impossible de lire le fichier Excel : {exc}")
+
+    # ── Lire les en-têtes ─────────────────────────────────────────────────
+    raw_headers = [str(c.value).strip() if c.value is not None else "" for c in ws[1]]
+    REQUIRED = {"email_etudiant", "titre_diplome", "domaine", "date_graduation"}
+    missing = REQUIRED - set(raw_headers)
+    if missing:
+        raise HTTPException(400, f"Colonnes manquantes dans l'Excel : {', '.join(sorted(missing))}")
+
+    col = {h: i for i, h in enumerate(raw_headers)}
+
+    # ── Récupérer l'institution et son template ───────────────────────────
+    institution = db.query(Institution).filter(
+        Institution.manager_id == current_user.id
+    ).first()
+
+    from app.models.models import DiplomaTemplate
+    tmpl = db.query(DiplomaTemplate).filter(
+        DiplomaTemplate.institution_id == institution.id,
+        DiplomaTemplate.is_active == True,
+    ).first()
+    template_path = tmpl.file_path if tmpl else None
+
+    # ── Traiter chaque ligne ───────────────────────────────────────────────
+    results: list[dict] = []
+    pdf_files: dict[str, bytes] = {}
+
+    for row_num, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+        # Ignorer les lignes vides
+        if all(v is None or str(v).strip() == "" for v in row):
+            continue
+
+        def cell(col_name: str):
+            idx = col.get(col_name)
+            if idx is None or idx >= len(row):
+                return None
+            v = row[idx]
+            return str(v).strip() if v is not None else None
+
+        email          = cell("email_etudiant")
+        degree_title   = cell("titre_diplome")
+        field_of_study = cell("domaine")
+        grad_raw       = cell("date_graduation")
+        honors         = cell("mention") or None
+
+        def err(msg: str):
+            results.append({"ligne": row_num, "email": email or "", "statut": "erreur",
+                             "code": "", "message": msg})
+
+        # Validation des champs obligatoires
+        if not email or not degree_title or not field_of_study or not grad_raw:
+            err("Champs obligatoires manquants (email, titre, domaine, date)")
+            continue
+
+        # Parsing de la date
+        try:
+            raw_val = row[col["date_graduation"]]
+            if isinstance(raw_val, datetime):
+                graduation_date = raw_val.replace(tzinfo=timezone.utc)
+            else:
+                date_str = str(raw_val).strip()
+                parsed = None
+                for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y", "%Y/%m/%d"):
+                    try:
+                        parsed = datetime.strptime(date_str, fmt).replace(tzinfo=timezone.utc)
+                        break
+                    except ValueError:
+                        pass
+                if parsed is None:
+                    raise ValueError(f"Format inconnu : {date_str}")
+                graduation_date = parsed
+        except Exception as exc:
+            err(f"Date invalide : {exc}")
+            continue
+
+        # Chercher l'étudiant
+        user = db.query(UserModel).filter(UserModel.email == email).first()
+        if not user:
+            err("Aucun compte trouvé pour cet email")
+            continue
+
+        student = db.query(Student).filter(Student.user_id == user.id).first()
+        if not student:
+            err("Profil étudiant introuvable pour cet utilisateur")
+            continue
+
+        if not student.is_approved:
+            err("L'étudiant n'a pas encore été approuvé par l'administrateur")
+            continue
+
+        # Créer et émettre le diplôme
+        try:
+            diploma_schema = DiplomaCreate(
+                student_id=student.id,
+                degree_title=degree_title,
+                field_of_study=field_of_study,
+                graduation_date=graduation_date,
+                honors=honors,
+            )
+            diploma = create_diploma(db=db, data=diploma_schema, institution_id=institution.id)
+
+            # Émission immédiate (sans ancrage Hedera pour la vitesse)
+            diploma.status   = "issued"
+            diploma.issued_at = datetime.now(timezone.utc)
+            db.commit()
+            db.refresh(diploma)
+
+            # Générer le PDF
+            student_name = decrypt_sensitive(student.full_name_enc)
+            pdf_data = {
+                "degree_title":  diploma.degree_title,
+                "field_of_study": diploma.field_of_study,
+                "graduation_date": diploma.graduation_date,
+                "honors":        diploma.honors,
+                "unique_code":   diploma.unique_code,
+            }
+            pdf_bytes = generate_diploma_pdf(
+                diploma_data=pdf_data,
+                student_name=student_name,
+                institution_name=institution.name,
+                template_path=template_path,
+            )
+            save_generated_pdf(pdf_bytes, diploma.id)
+
+            safe_email = email.replace("@", "_at_").replace(".", "_")
+            filename = f"diplome_{safe_email}_{diploma.unique_code}.pdf"
+            pdf_files[filename] = pdf_bytes
+
+            results.append({
+                "ligne": row_num, "email": email,
+                "statut": "succès", "code": diploma.unique_code,
+                "message": "Diplôme créé et émis avec succès",
+            })
+
+        except Exception as exc:
+            db.rollback()
+            err(str(exc))
+
+    if not pdf_files:
+        raise HTTPException(
+            400,
+            detail={
+                "message": "Aucun diplôme n'a pu être généré. Consultez le rapport ci-dessous.",
+                "rapport": results,
+            },
+        )
+
+    # ── Construire le ZIP ─────────────────────────────────────────────────
+    zip_buf = io.BytesIO()
+    with zipfile.ZipFile(zip_buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for fname, pdf_b in pdf_files.items():
+            zf.writestr(fname, pdf_b)
+
+        # Rapport CSV
+        csv_io = io.StringIO()
+        writer = csv.DictWriter(
+            csv_io,
+            fieldnames=["ligne", "email", "statut", "code", "message"],
+            extrasaction="ignore",
+        )
+        writer.writeheader()
+        writer.writerows(results)
+        zf.writestr("rapport.csv", csv_io.getvalue())
+
+    zip_buf.seek(0)
+
+    success_n = sum(1 for r in results if r["statut"] == "succès")
+    total_n   = len(results)
+
+    return Response(
+        content=zip_buf.getvalue(),
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": f"attachment; filename=diplomes_masse_{institution.id[:8]}.zip",
+            "X-Success-Count": str(success_n),
+            "X-Total-Count":   str(total_n),
+            "Access-Control-Expose-Headers": "X-Success-Count, X-Total-Count",
+        },
+    )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
