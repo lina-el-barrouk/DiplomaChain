@@ -121,6 +121,9 @@ class DiplomaOut(BaseModel):
     hedera_consensus_timestamp: str | None
     issued_at: datetime | None
     created_at: datetime
+    # Champs enrichis (décryptés côté serveur, uniquement pour l'institution propriétaire)
+    student_name: str | None = None
+    student_email: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -134,6 +137,7 @@ class VerifyResponse(BaseModel):
     reason: str | None = None
     diploma_id: str | None = None
     unique_code: str | None = None
+    student_name: str | None = None   # Nom décrypté côté serveur, jamais l'email ni les données sensibles
     degree_title: str | None = None
     field_of_study: str | None = None
     graduation_date: datetime | None = None

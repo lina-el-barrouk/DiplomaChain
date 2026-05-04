@@ -99,7 +99,23 @@ export default function VerifyPublic() {
                 <div className="result-grid">
                   <div className="result-field">
                     <span className="result-field-label">Étudiant</span>
-                    <span className="result-field-value">— (données privées)</span>
+                    <span className="result-field-value" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      {result.student_name ? (
+                        <>
+                          <span style={{
+                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                            width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+                            background: 'linear-gradient(135deg, var(--gold), #b8922e)',
+                            fontSize: 11, fontWeight: 700, color: '#000',
+                          }}>
+                            {result.student_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                          </span>
+                          <strong>{result.student_name}</strong>
+                        </>
+                      ) : (
+                        <span style={{ color: 'var(--text-3)', fontStyle: 'italic' }}>— (données privées)</span>
+                      )}
+                    </span>
                   </div>
                   <div className="result-field">
                     <span className="result-field-label">Diplôme</span>

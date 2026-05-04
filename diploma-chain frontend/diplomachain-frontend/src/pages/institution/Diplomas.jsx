@@ -134,7 +134,9 @@ export default function InstitutionDiplomas() {
 
   const filtered = diplomas.filter(d =>
     d.unique_code.includes(search.toUpperCase()) ||
-    d.degree_title.toLowerCase().includes(search.toLowerCase())
+    d.degree_title.toLowerCase().includes(search.toLowerCase()) ||
+    (d.student_name || '').toLowerCase().includes(search.toLowerCase()) ||
+    (d.student_email || '').toLowerCase().includes(search.toLowerCase())
   )
 
   return (
@@ -158,7 +160,7 @@ export default function InstitutionDiplomas() {
       {/* Search */}
       <div style={{ position: 'relative', marginBottom: 20 }}>
         <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)' }} />
-        <input className="input" style={{ paddingLeft: 38 }} placeholder="Rechercher par code ou titre..."
+        <input className="input" style={{ paddingLeft: 38 }} placeholder="Rechercher par code, titre, nom ou email..."
           value={search} onChange={e => setSearch(e.target.value)} />
       </div>
 
@@ -173,12 +175,41 @@ export default function InstitutionDiplomas() {
         ) : (
           <table className="table">
             <thead>
-              <tr><th>Code</th><th>Titre</th><th>Statut</th><th>Blockchain</th><th>Créé le</th><th>Actions</th></tr>
+              <tr>
+                <th>Code</th>
+                <th>Étudiant</th>
+                <th>Email</th>
+                <th>Titre</th>
+                <th>Statut</th>
+                <th>Blockchain</th>
+                <th>Créé le</th>
+                <th>Actions</th>
+              </tr>
             </thead>
             <tbody>
               {filtered.map(d => (
                 <tr key={d.id}>
                   <td><span className="mono" style={{ fontSize: 12, color: 'var(--gold)' }}>{d.unique_code}</span></td>
+                  <td>
+                    {d.student_name ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{
+                          width: 28, height: 28, borderRadius: '50%',
+                          background: 'linear-gradient(135deg, var(--gold), #b8922e)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 11, fontWeight: 700, color: '#000', flexShrink: 0,
+                        }}>
+                          {d.student_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                        </div>
+                        <span style={{ color: 'var(--text-1)', fontSize: 13 }}>{d.student_name}</span>
+                      </div>
+                    ) : (
+                      <span style={{ color: 'var(--text-3)', fontSize: 12 }}>—</span>
+                    )}
+                  </td>
+                  <td style={{ fontSize: 12, color: 'var(--text-2)' }}>
+                    {d.student_email || <span style={{ color: 'var(--text-3)' }}>—</span>}
+                  </td>
                   <td style={{ color: 'var(--text-1)' }}>{d.degree_title}</td>
                   <td>
                     <span className={`badge ${d.status === 'issued' ? 'badge-success' : d.status === 'revoked' ? 'badge-danger' : 'badge-muted'}`}>

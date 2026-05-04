@@ -305,6 +305,19 @@ export default function Landing() {
                   </div>
                   {result.valid && (
                     <div className="res-details">
+                      {result.student_name && (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
+                          <span style={{
+                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                            width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+                            background: 'linear-gradient(135deg, var(--gold), #b8922e)',
+                            fontSize: 9, fontWeight: 700, color: '#000',
+                          }}>
+                            {result.student_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                          </span>
+                          {result.student_name}
+                        </span>
+                      )}
                       {result.degree_title && (
                         <span>{result.degree_title}</span>
                       )}

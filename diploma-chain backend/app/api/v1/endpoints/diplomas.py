@@ -170,6 +170,9 @@ def list_diplomas(
     db: Session = Depends(get_db),
 ):
     """Liste les diplômes de l'institution courante ou tous (admin)."""
+    from app.core.security import decrypt_sensitive
+    from app.models.models import Student
+
     query = db.query(Diploma)
 
     if current_user.role == "institution":
@@ -180,7 +183,6 @@ def list_diplomas(
             return []
         query = query.filter(Diploma.institution_id == institution.id)
     elif current_user.role == "student":
-        from app.models.models import Student
         student = db.query(Student).filter(Student.user_id == current_user.id).first()
         if not student:
             return []
@@ -191,7 +193,25 @@ def list_diplomas(
     if status:
         query = query.filter(Diploma.status == status)
 
-    return query.offset(skip).limit(min(limit, 200)).all()
+    diplomas = query.offset(skip).limit(min(limit, 200)).all()
+
+    # Enrichir avec le nom et l'email de l'étudiant (seulement pour institution / admin)
+    if current_user.role in ("institution", "admin"):
+        results = []
+        for d in diplomas:
+            out = DiplomaOut.model_validate(d)
+            student = db.query(Student).filter(Student.id == d.student_id).first()
+            if student:
+                try:
+                    out.student_name = decrypt_sensitive(student.full_name_enc)
+                except Exception:
+                    out.student_name = None
+                user = db.query(User).filter(User.id == student.user_id).first()
+                out.student_email = user.email if user else None
+            results.append(out)
+        return results
+
+    return diplomas
 
 
 # ─────────────────────────────────────────────────────────────────────────────

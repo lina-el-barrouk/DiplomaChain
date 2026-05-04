@@ -215,10 +215,21 @@ async def verify_diploma(
     result = "valid" if integrity_ok else "invalid"
     _log_verification(db, diploma.id, verifier_id, verifier_ip, result)
 
+    # Déchiffrer le nom de l'étudiant côté serveur — seul le nom affiché est exposé
+    student_name = None
+    student = db.query(Student).filter(Student.id == diploma.student_id).first()
+    if student:
+        try:
+            from app.core.security import decrypt_sensitive
+            student_name = decrypt_sensitive(student.full_name_enc)
+        except Exception:
+            student_name = None  # Échec silencieux — ne pas bloquer la vérification
+
     return {
         "valid": integrity_ok,
         "diploma_id": diploma.id,
         "unique_code": diploma.unique_code,
+        "student_name": student_name,   # Nom uniquement — pas d'email ni d'ID sensible
         "degree_title": diploma.degree_title,
         "field_of_study": diploma.field_of_study,
         "graduation_date": diploma.graduation_date,
