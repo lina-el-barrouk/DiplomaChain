@@ -159,13 +159,46 @@ def _fill_template(template_path: str, values: dict, unique_code: str) -> bytes:
 
         # ── Appliquer les redactions en une passe (efface le texte source) ────
         for inst, value, font_size, color, bg_color in redactions:
-            page.add_redact_annot(inst, fill=bg_color)
+            # Réduire la hauteur du rectangle pour éviter de déborder sur les textes adjacents
+            # (comme le titre "DIPLÔME" juste au-dessus)
+            safe_inst = fitz.Rect(
+                inst.x0,
+                inst.y0 + (inst.height * 0.25),
+                inst.x1,
+                inst.y1 - (inst.height * 0.1)
+            )
+            # Ne pas mettre de "fill" pour préserver la texture du papier (fond)
+            page.add_redact_annot(safe_inst)
         page.apply_redactions()
 
         # ── Écrire les valeurs de remplacement ────────────────────────────────
         for inst, value, font_size, color, bg_color in redactions:
+            # 1. Calculer la largeur du texte (approximation via Helvetica)
+            text_width = fitz.get_text_length(value, fontname="helv", fontsize=font_size)
+            
+            # 2. Détecter si le placeholder d'origine était centré
+            page_center = page.rect.width / 2
+            original_center = inst.x0 + (inst.width / 2)
+            # Tolérance de 15% de la largeur de la page pour considérer que c'est centré
+            is_centered = abs(original_center - page_center) < (page.rect.width * 0.15)
+            
+            # 3. Ajustement de la taille de police (auto-scale) et position X
+            if is_centered:
+                max_width = page.rect.width - 60  # 30px de marge de chaque côté
+                if text_width > max_width and max_width > 0:
+                    font_size = font_size * (max_width / text_width)
+                    text_width = fitz.get_text_length(value, fontname="helv", fontsize=font_size)
+                new_x0 = original_center - (text_width / 2)
+            else:
+                max_width = page.rect.width - inst.x0 - 30
+                if text_width > max_width and max_width > 0:
+                    font_size = font_size * (max_width / text_width)
+                    text_width = fitz.get_text_length(value, fontname="helv", fontsize=font_size)
+                new_x0 = inst.x0
+
+            # 4. Insérer le texte
             page.insert_text(
-                (inst.x0, inst.y1 - 2),
+                (new_x0, inst.y1 - 2),
                 value,
                 fontsize=font_size,
                 color=color,
@@ -175,8 +208,13 @@ def _fill_template(template_path: str, values: dict, unique_code: str) -> bytes:
         qr_instances = _find_placeholder_rects(page, "{{QR_CODE}}")
         if qr_instances and unique_code:
             for inst in qr_instances:
-                bg_color = _get_background_color(page, inst)
-                page.add_redact_annot(inst, fill=bg_color)
+                safe_qr_inst = fitz.Rect(
+                    inst.x0,
+                    inst.y0 + (inst.height * 0.25),
+                    inst.x1,
+                    inst.y1 - (inst.height * 0.1)
+                )
+                page.add_redact_annot(safe_qr_inst)
             page.apply_redactions()
             for inst in qr_instances:
                 _insert_qr_on_page(page, unique_code, inst.x0, inst.y0, size=80)
