@@ -22,7 +22,11 @@
   transform: translateX(-50%);
   width: 600px;
   height: 600px;
-  background: radial-gradient(ellipse, rgba(201,168,76,0.07) 0%, transparent 65%);
+  background: radial-gradient(
+    ellipse,
+    rgba(201, 168, 76, 0.07) 0%,
+    transparent 65%
+  );
   pointer-events: none;
 }
 
@@ -128,7 +132,9 @@
   font-weight: 500;
 }
 
-.auth-link:hover { text-decoration: underline; }
+.auth-link:hover {
+  text-decoration: underline;
+}
 
 .auth-verify-link {
   text-align: center;
@@ -141,7 +147,9 @@
   text-decoration: none;
 }
 
-.auth-link-muted:hover { color: var(--text-2); }
+.auth-link-muted:hover {
+  color: var(--text-2);
+}
 
 /* Role selector for register */
 .role-grid {
@@ -185,4 +193,78 @@
   font-size: 11px;
   color: var(--text-3);
   margin-top: 2px;
+}
+
+/* Bouton de retour accueil */
+.back-home-btn {
+  position: fixed;
+  top: 24px;
+  left: 24px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  border-radius: 40px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font-body);
+}
+
+.back-home-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--gold);
+  color: var(--gold);
+  transform: translateX(-2px);
+}
+
+.back-home-btn span {
+  margin-top: 1px;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .back-home-btn {
+    top: 16px;
+    left: 16px;
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .back-home-btn span {
+    display: none; /* Cache le texte sur mobile, garde juste l'icône */
+  }
+
+  .back-home-btn {
+    padding: 8px;
+    border-radius: 32px;
+  }
+}
+/* Password toggle button */
+.password-toggle-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-3);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  transition: all 0.2s ease;
+}
+
+.password-toggle-btn:hover {
+  color: var(--gold);
+  background: rgba(255, 255, 255, 0.05);
 }

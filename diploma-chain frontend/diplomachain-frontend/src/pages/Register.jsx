@@ -12,6 +12,9 @@ import {
   MapPin,
   CreditCard,
   Calendar,
+  ArrowLeft,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import "./Auth.css";
 
@@ -27,6 +30,7 @@ export default function Register() {
     country: "",
   });
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -66,6 +70,16 @@ export default function Register() {
       <div className="auth-bg">
         <div className="auth-glow" />
       </div>
+
+      <button
+        onClick={() => navigate("/")}
+        className="back-home-btn"
+        aria-label="Retour à l'accueil"
+      >
+        <ArrowLeft size={20} />
+        <span>Accueil</span>
+      </button>
+
       <div className="auth-container fade-in" style={{ maxWidth: 480 }}>
         <div className="auth-logo">
           <div className="auth-logo-mark">DC</div>
@@ -139,7 +153,7 @@ export default function Register() {
                 <Lock size={15} className="input-icon" />
                 <input
                   className="input input-with-icon"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="Min. 12 caractères"
                   value={form.password}
                   onChange={(e) =>
@@ -147,6 +161,14 @@ export default function Register() {
                   }
                   required
                 />
+                <button
+                  type="button"
+                  className="password-toggle-btn"
+                  onClick={() => setShowPassword(!showPassword)}
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
               <p style={{ fontSize: 11, color: "var(--text-3)", marginTop: 4 }}>
                 Majuscule + chiffre + caractère spécial requis

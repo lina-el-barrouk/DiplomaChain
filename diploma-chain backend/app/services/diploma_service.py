@@ -45,16 +45,18 @@ def create_diploma(db: Session, data: DiplomaCreate, institution_id: str, file_b
     # Garder le unique_code — il est indispensable
     unique_code = generate_unique_code()
 
-    diploma_data = {
-        "unique_code": unique_code,
-        "student_id": data.student_id,
-        "institution_id": institution_id,
-        "degree_title": data.degree_title,
-        "field_of_study": data.field_of_study,
-        "graduation_date": data.graduation_date.isoformat(),
-        "honors": data.honors,
-    }
+   # Normaliser la date pour le hash — supprimer le fuseau horaire
+    grad_date_str = data.graduation_date.replace(tzinfo=None).isoformat()
 
+    diploma_data = {
+    "unique_code": unique_code,
+    "student_id": data.student_id,
+    "institution_id": institution_id,
+    "degree_title": data.degree_title,
+    "field_of_study": data.field_of_study,
+    "graduation_date": grad_date_str,
+    "honors": data.honors,
+     }
     diploma = Diploma(
         unique_code=unique_code,
         student_id=data.student_id,

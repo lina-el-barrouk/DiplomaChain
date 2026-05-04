@@ -3,12 +3,13 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../AuthContext";
 import { authApi } from "../api";
 import toast from "react-hot-toast";
-import { Lock, Mail, ChevronRight } from "lucide-react";
+import { Lock, Mail, ChevronRight, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import "./Auth.css";
 
 export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -47,6 +48,15 @@ export default function Login() {
       <div className="auth-bg">
         <div className="auth-glow" />
       </div>
+
+      <button
+        onClick={() => navigate("/")}
+        className="back-home-btn"
+        aria-label="Retour à l'accueil"
+      >
+        <ArrowLeft size={20} />
+        <span>Accueil</span>
+      </button>
 
       <div className="auth-container fade-in">
         <div className="auth-logo">
@@ -87,7 +97,7 @@ export default function Login() {
                 <Lock size={15} className="input-icon" />
                 <input
                   className="input input-with-icon"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="••••••••••••"
                   value={form.password}
                   onChange={(e) =>
@@ -95,6 +105,14 @@ export default function Login() {
                   }
                   required
                 />
+                <button
+                  type="button"
+                  className="password-toggle-btn"
+                  onClick={() => setShowPassword(!showPassword)}
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
             </div>
 

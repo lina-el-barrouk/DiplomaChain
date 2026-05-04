@@ -1,0 +1,16 @@
+**/.env*
+**/.DS_Store
+**/venv/
+**/node_modules/
+**/storage/generated/
+**/logs/
+**/__pycache__/
+**/*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
+*.log
+Dockerfile.*
+!.env.example
+.pytest_cache/
+

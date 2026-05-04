@@ -82,44 +82,103 @@ def generate_diploma_pdf(
         return _generate_default_pdf(values, unique_code)
 
 
+def _find_placeholder_rects(page, placeholder: str) -> list:
+    """
+    Cherche un placeholder dans la page PDF.
+    Stratégie 1 : search_for direct (rapide).
+    Stratégie 2 : reconstruction caractère par caractère via rawdict
+                  (fiable même si le texte est fragmenté en plusieurs spans).
+    """
+    # --- Stratégie 1 : recherche directe ---
+    instances = page.search_for(placeholder)
+    if instances:
+        return instances
+
+    # --- Stratégie 2 : reconstruction ligne par ligne ---
+    found_rects = []
+    try:
+        raw = page.get_text("rawdict", flags=fitz.TEXT_PRESERVE_WHITESPACE)
+    except Exception:
+        return []
+
+    for block in raw.get("blocks", []):
+        if block.get("type") != 0:   # 0 = bloc texte
+            continue
+        for line in block.get("lines", []):
+            spans = line.get("spans", [])
+            if not spans:
+                continue
+
+            # Reconstruire le texte complet de la ligne + positions de chaque caractère
+            full_text = ""
+            char_rects: list[fitz.Rect] = []
+
+            for span in spans:
+                for char in span.get("chars", []):
+                    full_text += char["c"]
+                    char_rects.append(fitz.Rect(char["bbox"]))
+
+            # Chercher toutes les occurrences du placeholder dans la ligne reconstruite
+            start = 0
+            ph_len = len(placeholder)
+            while True:
+                idx = full_text.find(placeholder, start)
+                if idx == -1:
+                    break
+                end_idx = idx + ph_len - 1
+                if end_idx < len(char_rects):
+                    # Union des rectangles de chaque caractère du placeholder
+                    r = char_rects[idx]
+                    for i in range(idx + 1, end_idx + 1):
+                        r = r | char_rects[i]
+                    found_rects.append(r)
+                start = idx + 1
+
+    return found_rects
+
+
 def _fill_template(template_path: str, values: dict, unique_code: str) -> bytes:
     doc = fitz.open(template_path)
 
     for page in doc:
-        blocks = page.get_text("dict")["blocks"]
+        # ── Collecter toutes les zones à remplacer avant d'appliquer ──────────
+        redactions: list[tuple[fitz.Rect, str, float, tuple, tuple]] = []
 
         for placeholder, key in PLACEHOLDERS.items():
-            value = values.get(key, "")
-            if not value:
-                value = ""
+            value = values.get(key, "") or ""
 
-            instances = page.search_for(placeholder)
+            instances = _find_placeholder_rects(page, placeholder)
             if not instances:
                 continue
 
+            blocks = page.get_text("dict")["blocks"]
             for inst in instances:
-                color, font_size, font_name = _get_text_properties(blocks, inst)
-
-                # Détecter la couleur de fond à cet endroit
+                color, font_size, _ = _get_text_properties(blocks, inst)
                 bg_color = _get_background_color(page, inst)
+                redactions.append((inst, value, font_size, color, bg_color))
 
-                # Couvrir avec la couleur de fond exacte
-                page.draw_rect(inst, color=bg_color, fill=bg_color)
+        # ── Appliquer les redactions en une passe (efface le texte source) ────
+        for inst, value, font_size, color, bg_color in redactions:
+            page.add_redact_annot(inst, fill=bg_color)
+        page.apply_redactions()
 
-                # Écrire la valeur
-                page.insert_text(
-                    (inst.x0, inst.y1 - 2),
-                    value,
-                    fontsize=font_size,
-                    color=color,
-                )
+        # ── Écrire les valeurs de remplacement ────────────────────────────────
+        for inst, value, font_size, color, bg_color in redactions:
+            page.insert_text(
+                (inst.x0, inst.y1 - 2),
+                value,
+                fontsize=font_size,
+                color=color,
+            )
 
-        # QR Code
-        qr_instances = page.search_for("{{QR_CODE}}")
+        # ── QR Code ───────────────────────────────────────────────────────────
+        qr_instances = _find_placeholder_rects(page, "{{QR_CODE}}")
         if qr_instances and unique_code:
             for inst in qr_instances:
                 bg_color = _get_background_color(page, inst)
-                page.draw_rect(inst, color=bg_color, fill=bg_color)
+                page.add_redact_annot(inst, fill=bg_color)
+            page.apply_redactions()
+            for inst in qr_instances:
                 _insert_qr_on_page(page, unique_code, inst.x0, inst.y0, size=80)
         elif unique_code:
             rect = page.rect
