@@ -24,9 +24,14 @@ export default function InstitutionDiplomas() {
 
   const load = async () => {
     setLoading(true)
-    try { const { data } = await diplomaApi.list(); setDiplomas(data) }
-    catch { toast.error('Erreur de chargement') }
-    finally { setLoading(false) }
+    try {
+      const { data } = await diplomaApi.list()
+      console.log('[Diplomas] API response:', data?.length, 'items', data?.map(d => ({id: d.id?.slice(0,8), status: d.status})))
+      setDiplomas(data)
+    } catch (e) {
+      console.error('[Diplomas] load error:', e.response?.status, e.response?.data)
+      toast.error('Erreur de chargement : ' + (e.response?.data?.detail || e.message || 'inconnue'))
+    } finally { setLoading(false) }
   }
 
   useEffect(() => { load() }, [])
@@ -45,6 +50,11 @@ export default function InstitutionDiplomas() {
   const issue = async (id) => {
     try { await diplomaApi.issue(id); toast.success('Diplôme émis ⛓'); load() }
     catch (e) { toast.error(e.response?.data?.detail || 'Erreur') }
+  }
+
+  const anchor = async (id) => {
+    try { await diplomaApi.anchor(id); toast.success('Diplôme ancré sur Hedera ⛓'); load() }
+    catch (e) { toast.error(e.response?.data?.detail || 'Erreur lors de l\'ancrage') }
   }
 
   const revoke = async () => {
@@ -101,7 +111,7 @@ export default function InstitutionDiplomas() {
       URL.revokeObjectURL(url)
 
       setBulkResults({ success: successCount, total: totalCount, errors: totalCount - successCount })
-      toast.success(`${successCount} diplôme(s) généré(s) avec succès !`)
+      toast.success(`${successCount} diplôme(s) créé(s) en attente d'émission !`)
       load()
     } catch (err) {
       // Avec responseType:'blob', l'erreur HTTP est aussi un Blob → il faut la lire comme texte JSON
@@ -132,12 +142,15 @@ export default function InstitutionDiplomas() {
 
   const closeBulk = () => { setShowBulk(false); setBulkFile(null); setBulkResults(null) }
 
-  const filtered = diplomas.filter(d =>
-    d.unique_code.includes(search.toUpperCase()) ||
-    d.degree_title.toLowerCase().includes(search.toLowerCase()) ||
-    (d.student_name || '').toLowerCase().includes(search.toLowerCase()) ||
-    (d.student_email || '').toLowerCase().includes(search.toLowerCase())
-  )
+  const filtered = diplomas.filter(d => {
+    if (!d) return false
+    const code  = (d.unique_code  || '').toUpperCase()
+    const title = (d.degree_title || '').toLowerCase()
+    const sname = (d.student_name || '').toLowerCase()
+    const semail = (d.student_email || '').toLowerCase()
+    const q = search.toLowerCase()
+    return code.includes(search.toUpperCase()) || title.includes(q) || sname.includes(q) || semail.includes(q)
+  })
 
   return (
     <Layout>
@@ -219,12 +232,20 @@ export default function InstitutionDiplomas() {
                   <td>{d.blockchain_anchored ? <span className="badge badge-gold">⛓ Ancré</span> : <span style={{ color: 'var(--text-3)', fontSize: 12 }}>—</span>}</td>
                   <td style={{ fontSize: 12 }}>{new Date(d.created_at).toLocaleDateString('fr-FR')}</td>
                   <td>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      {d.status === 'pending' && (
-                        <button className="btn btn-success btn-sm" onClick={() => issue(d.id)}><Send size={13} /> Émettre</button>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', minWidth: '180px' }}>
+                      {/* Émettre : visible pour tout diplôme qui n'est pas encore émis ou révoqué */}
+                      {d.status !== 'issued' && d.status !== 'revoked' && (
+                        <button className="btn btn-success btn-sm" onClick={() => issue(d.id)}>
+                          <Send size={13} /> Émettre
+                        </button>
                       )}
                       {d.status === 'issued' && (
                         <>
+                          {!d.blockchain_anchored && (
+                            <button className="btn btn-primary btn-sm" onClick={() => anchor(d.id)} title="Ancrer sur Hedera">
+                              <Send size={13} /> Ancrer
+                            </button>
+                          )}
                           <button className="btn btn-ghost btn-sm" onClick={() => downloadPdf(d.id, d.unique_code)} title="PDF"><Download size={13} /></button>
                           <button className="btn btn-ghost btn-sm" onClick={() => showQr(d.id)} title="QR"><QrCode size={13} /></button>
                           <button className="btn btn-danger btn-sm" onClick={() => setShowRevoke(d.id)}><XCircle size={13} /> Révoquer</button>
@@ -251,7 +272,9 @@ export default function InstitutionDiplomas() {
             </h3>
             <p style={{ color: 'var(--text-3)', fontSize: 13, marginBottom: 24 }}>
               Uploadez un fichier Excel (.xlsx) contenant les données des étudiants.<br />
-              Un PDF de diplôme sera généré pour chaque ligne valide, et vous recevrez un ZIP.
+              Un diplôme en <strong style={{ color: 'var(--gold)' }}>attente d'émission</strong> sera créé pour chaque ligne valide,
+              avec un PDF de prévisualisation dans le ZIP.<br />
+              <span style={{ color: 'var(--text-3)', fontSize: 12 }}>➜ Revenez ensuite dans la liste et cliquez <strong>Émettre</strong> sur chaque diplôme pour l'ancrer sur Hedera.</span>
             </p>
 
             {/* Colonnes attendues */}
@@ -314,7 +337,7 @@ export default function InstitutionDiplomas() {
                   <div style={{ flex: 1, background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: 8, padding: '12px 16px', textAlign: 'center' }}>
                     <CheckCircle size={18} style={{ color: '#4ade80' }} />
                     <p style={{ fontSize: 22, fontWeight: 700, color: '#4ade80', margin: '4px 0' }}>{bulkResults.success}</p>
-                    <p style={{ fontSize: 12, color: 'var(--text-3)' }}>Succès</p>
+                    <p style={{ fontSize: 12, color: 'var(--text-3)' }}>Créés (pending)</p>
                   </div>
                   <div style={{ flex: 1, background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 8, padding: '12px 16px', textAlign: 'center' }}>
                     <AlertCircle size={18} style={{ color: '#f87171' }} />

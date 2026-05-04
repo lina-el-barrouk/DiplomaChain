@@ -120,11 +120,53 @@ async def issue_diploma(db: Session, diploma_id: str, institution_id: str) -> Di
     return diploma
 
 
+async def anchor_on_hedera(db: Session, diploma_id: str, institution_id: str) -> Diploma:
+    """
+    Ancre rétroactivement sur Hedera un diplôme déjà émis (blockchain_anchored=False).
+    Cas typique : diplômes générés en masse avec l'ancienne version du code.
+    """
+    diploma = (
+        db.query(Diploma)
+        .filter(Diploma.id == diploma_id, Diploma.institution_id == institution_id)
+        .first()
+    )
+    if not diploma:
+        raise ValueError("Diplôme introuvable ou accès refusé")
+    if diploma.status != "issued":
+        raise ValueError(f"Seuls les diplômes émis peuvent être ancrés (statut actuel : '{diploma.status}')")
+    if diploma.blockchain_anchored:
+        raise ValueError("Ce diplôme est déjà ancré sur Hedera")
+
+    # Ancrage sur Hedera
+    anchor = await hedera_service.anchor_diploma(
+        diploma_id=diploma.id,
+        content_hash=diploma.content_hash,
+        institution_id=diploma.institution_id,
+        degree_title=diploma.degree_title,
+        graduation_date=diploma.graduation_date.isoformat(),
+    )
+
+    if not anchor.success:
+        raise ValueError(f"L'ancrage Hedera a échoué : {getattr(anchor, 'error', 'erreur inconnue')}")
+
+    diploma.hedera_topic_id = settings_topic()
+    diploma.hedera_transaction_id = anchor.transaction_id
+    diploma.hedera_sequence_number = anchor.sequence_number
+    diploma.hedera_consensus_timestamp = anchor.consensus_timestamp
+    diploma.blockchain_anchored = True
+    db.commit()
+    db.refresh(diploma)
+    return diploma
+
+
 def settings_topic():
     from app.core.config import settings
     return settings.HEDERA_TOPIC_ID
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# RÉVOCATION
+# ─────────────────────────────────────────────────────────────────────────────
 # ─────────────────────────────────────────────────────────────────────────────
 # RÉVOCATION
 # ─────────────────────────────────────────────────────────────────────────────

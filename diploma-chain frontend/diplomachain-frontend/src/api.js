@@ -68,6 +68,7 @@ export const diplomaApi = {
   list: (params) => api.get('/diplomas/', { params }),
   get: (id) => api.get(`/diplomas/${id}`),
   issue: (id) => api.post(`/diplomas/${id}/issue`),
+  anchor: (id) => api.post(`/diplomas/${id}/anchor`),
   revoke: (id, reason) => api.post(`/diplomas/${id}/revoke`, { reason }),
   verify: (code) => api.get(`/diplomas/verify/${code}`),
   verifyHistory: (code) => api.get(`/diplomas/verify/${code}/history`),

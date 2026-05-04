@@ -230,12 +230,15 @@ async def bulk_generate_diplomas(
     Génère les diplômes en masse depuis un fichier Excel.
 
     Pour chaque ligne valide :
-      1. Cherche l'étudiant par email (doit être enregistré et approuvé)
-      2. Crée le diplôme (pending) puis l'émet immédiatement
-      3. Génère le PDF (avec template si disponible, sinon fond par défaut)
+      1. Cherche l'étudiant par email (doit être enregistré et approuvé par l'admin)
+      2. Crée le diplôme en statut PENDING (pas d'émission automatique)
+      3. Génère un PDF de prévisualisation
+
+    L'institution doit ensuite émettre chaque diplôme manuellement depuis
+    le tableau de bord — ce qui déclenche l'ancrage sur Hedera HCS.
 
     Retourne un fichier ZIP contenant :
-      - Un PDF par diplôme : diplome_<email>_<code>.pdf
+      - Un PDF de prévisualisation par diplôme : diplome_<email>_<code>.pdf
       - Un rapport : rapport.csv
     """
     import csv
@@ -351,7 +354,7 @@ async def bulk_generate_diplomas(
             err("L'étudiant n'a pas encore été approuvé par l'administrateur")
             continue
 
-        # Créer et émettre le diplôme
+        # ── ÉTAPE 1 : Créer le diplôme en PENDING (commit immédiat) ──────────
         try:
             diploma_schema = DiplomaCreate(
                 student_id=student.id,
@@ -361,14 +364,14 @@ async def bulk_generate_diplomas(
                 honors=honors,
             )
             diploma = create_diploma(db=db, data=diploma_schema, institution_id=institution.id)
+            # create_diploma fait déjà db.commit() — le diplôme est persisté en 'pending'
+        except Exception as exc:
+            db.rollback()
+            err(f"Impossible de créer le diplôme : {exc}")
+            continue  # Passer à la ligne suivante
 
-            # Émission immédiate (sans ancrage Hedera pour la vitesse)
-            diploma.status   = "issued"
-            diploma.issued_at = datetime.now(timezone.utc)
-            db.commit()
-            db.refresh(diploma)
-
-            # Générer le PDF
+        # ── ÉTAPE 2 : Générer le PDF de prévisualisation (échec n'annule pas le diplôme) ──
+        try:
             student_name = decrypt_sensitive(student.full_name_enc)
             pdf_data = {
                 "degree_title":  diploma.degree_title,
@@ -392,23 +395,29 @@ async def bulk_generate_diplomas(
             results.append({
                 "ligne": row_num, "email": email,
                 "statut": "succès", "code": diploma.unique_code,
-                "message": "Diplôme créé et émis avec succès",
+                "message": "Diplôme créé (en attente d'émission par l'institution)",
             })
 
-        except Exception as exc:
-            db.rollback()
-            err(str(exc))
+        except Exception as pdf_exc:
+            # Le diplôme est déjà en base — on note juste que le PDF a échoué
+            results.append({
+                "ligne": row_num, "email": email,
+                "statut": "succès", "code": diploma.unique_code,
+                "message": f"Diplôme créé (PDF indisponible : {pdf_exc})",
+            })
 
-    if not pdf_files:
+    # ── Vérifier si au moins un diplôme a été créé ───────────────────────
+    diplomas_created = sum(1 for r in results if r.get("statut") == "succès")
+    if diplomas_created == 0:
         raise HTTPException(
             400,
             detail={
-                "message": "Aucun diplôme n'a pu être généré. Consultez le rapport ci-dessous.",
+                "message": "Aucun diplôme n'a pu être créé. Consultez le rapport ci-dessous.",
                 "rapport": results,
             },
         )
 
-    # ── Construire le ZIP ─────────────────────────────────────────────────
+    # ── Construire le ZIP (PDFs + rapport CSV) ────────────────────────────
     zip_buf = io.BytesIO()
     with zipfile.ZipFile(zip_buf, "w", zipfile.ZIP_DEFLATED) as zf:
         for fname, pdf_b in pdf_files.items():
@@ -427,7 +436,7 @@ async def bulk_generate_diplomas(
 
     zip_buf.seek(0)
 
-    success_n = sum(1 for r in results if r["statut"] == "succès")
+    success_n = diplomas_created
     total_n   = len(results)
 
     return Response(

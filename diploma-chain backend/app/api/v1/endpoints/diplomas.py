@@ -95,6 +95,9 @@ async def issue_diploma_endpoint(
         Institution.manager_id == current_user.id
     ).first()
 
+    if not institution:
+        raise HTTPException(status_code=404, detail="Profil institution introuvable")
+
     try:
         diploma = await issue_diploma(
             db=db,
@@ -104,6 +107,41 @@ async def issue_diploma_endpoint(
         return diploma
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ANCRER SUR HEDERA (rétroactivement pour les diplômes émis sans ancrage)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.post("/{diploma_id}/anchor", response_model=DiplomaOut)
+async def anchor_diploma_endpoint(
+    diploma_id: str,
+    current_user: User = Depends(require_approved_institution),
+    db: Session = Depends(get_db),
+):
+    """Ancre rétroactivement sur Hedera un diplôme déjà émis mais non ancré."""
+    try:
+        from app.services.diploma_service import anchor_on_hedera
+
+        institution = db.query(Institution).filter(
+            Institution.manager_id == current_user.id
+        ).first()
+
+        if not institution:
+            raise HTTPException(status_code=404, detail="Profil institution introuvable")
+
+        diploma = await anchor_on_hedera(
+            db=db,
+            diploma_id=diploma_id,
+            institution_id=institution.id,
+        )
+        return diploma
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        import traceback
+        error_msg = f"Erreur interne: {str(e)}\n{traceback.format_exc()}"
+        raise HTTPException(status_code=400, detail=error_msg)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -199,16 +237,26 @@ def list_diplomas(
     if current_user.role in ("institution", "admin"):
         results = []
         for d in diplomas:
-            out = DiplomaOut.model_validate(d)
-            student = db.query(Student).filter(Student.id == d.student_id).first()
-            if student:
+            try:
+                out = DiplomaOut.model_validate(d)
+                student = db.query(Student).filter(Student.id == d.student_id).first()
+                if student:
+                    try:
+                        out.student_name = decrypt_sensitive(student.full_name_enc)
+                    except Exception:
+                        out.student_name = None
+                    user_obj = db.query(User).filter(User.id == student.user_id).first()
+                    out.student_email = user_obj.email if user_obj else None
+                results.append(out)
+            except Exception as e:
+                # En cas d'erreur sur un diplôme, on l'ajoute quand même avec les champs de base
+                import logging
+                logging.getLogger("diplomachain").warning(f"Enrichissement échoué pour diplôme {d.id}: {e}")
                 try:
-                    out.student_name = decrypt_sensitive(student.full_name_enc)
+                    out = DiplomaOut.model_validate(d)
+                    results.append(out)
                 except Exception:
-                    out.student_name = None
-                user = db.query(User).filter(User.id == student.user_id).first()
-                out.student_email = user.email if user else None
-            results.append(out)
+                    pass  # Ignorer les diplômes vraiment corrompus
         return results
 
     return diplomas
