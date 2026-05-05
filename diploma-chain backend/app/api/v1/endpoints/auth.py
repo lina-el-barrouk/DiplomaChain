@@ -121,16 +121,22 @@ def login(
         raise auth_error
 
     # Vérifier le verrouillage
-    if user.locked_until and user.locked_until > datetime.now(timezone.utc):
-        raise HTTPException(
-            status_code=status.HTTP_423_LOCKED,
-            detail=f"Compte verrouillé jusqu'à {user.locked_until.isoformat()}",
-        )
+    if user.locked_until:
+        locked_until_aware = user.locked_until
+        if locked_until_aware.tzinfo is None:
+            locked_until_aware = locked_until_aware.replace(tzinfo=timezone.utc)
+            
+        if locked_until_aware > datetime.now(timezone.utc):
+            raise HTTPException(
+                status_code=status.HTTP_423_LOCKED,
+                detail=f"Compte verrouillé jusqu'à {locked_until_aware.isoformat()}",
+            )
 
     if not verify_password(payload.password, user.password_hash):
         user.failed_logins += 1
         if user.failed_logins >= MAX_FAILED_LOGINS:
-            user.locked_until = datetime.now(timezone.utc) + timedelta(minutes=LOCKOUT_MINUTES)
+            # Enregistrement en naive UTC pour compatibilité avec la BDD
+            user.locked_until = datetime.utcnow() + timedelta(minutes=LOCKOUT_MINUTES)
         db.commit()
         raise auth_error
     # Vérifier si le profil est approuvé
