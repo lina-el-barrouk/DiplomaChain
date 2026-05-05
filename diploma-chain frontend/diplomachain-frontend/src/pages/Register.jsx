@@ -22,6 +22,7 @@ export default function Register() {
   const [form, setForm] = useState({
     email: "",
     password: "",
+    confirmPassword: "",
     role: "student",
     full_name: "",
     national_id: "",
@@ -36,6 +37,10 @@ export default function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (form.password !== form.confirmPassword) {
+      toast.error("Les mots de passe ne correspondent pas");
+      return;
+    }
     setLoading(true);
     try {
       const payload = {
@@ -175,6 +180,22 @@ export default function Register() {
               <p style={{ fontSize: 11, color: "var(--text-3)", marginTop: 4 }}>
                 Majuscule + chiffre + caractère spécial requis
               </p>
+            </div>
+            <div className="form-group">
+              <label className="input-label">Confirmer le mot de passe *</label>
+              <div className="input-icon-wrap">
+                <Lock size={15} className="input-icon" />
+                <input
+                  className="input input-with-icon"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Répétez le mot de passe"
+                  value={form.confirmPassword}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, confirmPassword: e.target.value }))
+                  }
+                  required
+                />
+              </div>
             </div>
 
             {/* Student specific */}
