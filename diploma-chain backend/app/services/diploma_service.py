@@ -2,6 +2,7 @@
 DiplomaChain – Service métier des diplômes
 Création, émission, révocation, vérification
 """
+import hashlib
 import secrets
 import string
 from datetime import datetime, timezone
@@ -21,7 +22,7 @@ from app.services.hedera_service import hedera_service
 def generate_unique_code() -> str:
     """
     Génère un identifiant unique de diplôme de 16 caractères
-    alphanumériques majuscules (résistant aux confusions visuelles).
+    alphanumériques majuscules.
     Exemple : DC-3X9K-2PLM-7QWR
     """
     alphabet = string.ascii_uppercase.replace("O", "").replace("I", "") + string.digits.replace("0", "").replace("1", "")
@@ -34,9 +35,7 @@ def generate_unique_code() -> str:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def create_diploma(db: Session, data: DiplomaCreate, institution_id: str, file_bytes: bytes | None = None) -> Diploma:
-    
     # Vérifier que l'étudiant existe et est approuvé
-    import hashlib
     student = None
     if data.student_id:
         student = db.query(Student).filter(Student.id == data.student_id).first()
@@ -52,18 +51,18 @@ def create_diploma(db: Session, data: DiplomaCreate, institution_id: str, file_b
     # Garder le unique_code — il est indispensable
     unique_code = generate_unique_code()
 
-   # Normaliser la date pour le hash — supprimer le fuseau horaire
+    # Normaliser la date pour le hash — supprimer le fuseau horaire
     grad_date_str = data.graduation_date.replace(tzinfo=None).isoformat()
 
     diploma_data = {
-    "unique_code": unique_code,
-    "student_id": student.id,
-    "institution_id": institution_id,
-    "degree_title": data.degree_title,
-    "field_of_study": data.field_of_study,
-    "graduation_date": grad_date_str,
-    "honors": data.honors,
-     }
+        "unique_code": unique_code,
+        "student_id": student.id,
+        "institution_id": institution_id,
+        "degree_title": data.degree_title,
+        "field_of_study": data.field_of_study,
+        "graduation_date": grad_date_str,
+        "honors": data.honors,
+    }
     diploma = Diploma(
         unique_code=unique_code,
         student_id=student.id,

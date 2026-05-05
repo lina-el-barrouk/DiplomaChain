@@ -26,7 +26,6 @@ export default function InstitutionDiplomas() {
     setLoading(true)
     try {
       const { data } = await diplomaApi.list()
-      console.log('[Diplomas] API response:', data?.length, 'items', data?.map(d => ({id: d.id?.slice(0,8), status: d.status})))
       setDiplomas(data)
     } catch (e) {
       console.error('[Diplomas] load error:', e.response?.status, e.response?.data)

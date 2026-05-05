@@ -425,7 +425,7 @@ async def bulk_generate_diplomas(
         csv_io = io.StringIO()
         writer = csv.DictWriter(
             csv_io,
-            fieldnames=["ligne", "email", "statut", "code", "message"],
+            fieldnames=["ligne", "code_massar", "statut", "code", "message"],
             extrasaction="ignore",
         )
         writer.writeheader()

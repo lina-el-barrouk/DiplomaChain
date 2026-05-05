@@ -9,9 +9,6 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-# from slowapi import Limiter, _rate_limit_exceeded_handler
-# from slowapi.errors import RateLimitExceeded
-# from slowapi.util import get_remote_address
 
 from app.api.v1.endpoints.admin import router as admin_router
 from app.api.v1.endpoints.auth import router as auth_router
@@ -21,7 +18,6 @@ from app.api.v1.endpoints.qr import router as qr_router
 from app.api.v1.endpoints.students import router as students_router
 from app.core.config import settings
 from app.db.database import Base, engine
-
 from app.api.v1.endpoints.pdf import router as pdf_router
 
 logging.basicConfig(
@@ -29,12 +25,6 @@ logging.basicConfig(
     format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
 )
 logger = logging.getLogger("diplomachain")
-
-# limiter = Limiter(
-#     key_func=get_remote_address,
-#     default_limits=[f"{settings.MAX_REQUESTS_PER_MINUTE}/minute"],
-#     storage_uri=settings.REDIS_URL,
-# )
 
 
 @asynccontextmanager
@@ -53,9 +43,6 @@ app = FastAPI(
     redoc_url="/redoc" if settings.DEBUG else None,
     lifespan=lifespan,
 )
-
-# app.state.limiter = limiter
-# app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
