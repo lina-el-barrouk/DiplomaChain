@@ -12,7 +12,7 @@ from qrcode.image.styles.moduledrawers.pil import RoundedModuleDrawer
 from qrcode.image.styles.colormasks import SolidFillColorMask
 
 
-VERIFICATION_BASE_URL = "http://localhost:8000/api/v1/diplomas/verify"
+VERIFICATION_BASE_URL = "http://192.168.100.17:5173/verify"
 
 
 def generate_qr_code_bytes(unique_code: str) -> bytes:
