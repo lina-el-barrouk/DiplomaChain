@@ -16,6 +16,7 @@ import {
   Upload,
   User,
   ClipboardList,
+  Search,
 } from "lucide-react";
 import "./Layout.css";
 
@@ -31,6 +32,7 @@ const menus = {
     { to: "/admin/students", icon: GraduationCap, label: "Étudiants" },
     { to: "/admin/users", icon: Users, label: "Utilisateurs" },
     { to: "/admin/audit", icon: ClipboardList, label: "Audit logs" },
+    { to: "/", icon: Search, label: "Vérification publique" },
   ],
   institution: [
     {
@@ -42,10 +44,12 @@ const menus = {
     { to: "/institution/diplomas", icon: ScrollText, label: "Diplômes" },
     { to: "/institution/template", icon: Upload, label: "Template PDF" },
     { to: "/institution/profile", icon: Settings, label: "Mon profil" },
+    { to: "/", icon: Search, label: "Vérification publique" },
   ],
   student: [
     { to: "/student", icon: LayoutDashboard, label: "Mes diplômes", end: true },
     { to: "/student/profile", icon: User, label: "Mon profil" },
+    { to: "/", icon: Search, label: "Vérification publique" },
   ],
 };
 
