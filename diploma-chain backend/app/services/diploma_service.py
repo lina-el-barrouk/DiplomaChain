@@ -35,10 +35,17 @@ def generate_unique_code() -> str:
 
 def create_diploma(db: Session, data: DiplomaCreate, institution_id: str, file_bytes: bytes | None = None) -> Diploma:
     
-    # Vérifier que l'étudiant est approuvé par l'admin
-    student = db.query(Student).filter(Student.id == data.student_id).first()
+    # Vérifier que l'étudiant existe et est approuvé
+    import hashlib
+    student = None
+    if data.student_id:
+        student = db.query(Student).filter(Student.id == data.student_id).first()
+    elif data.massar_code:
+        m_hash = hashlib.sha256(data.massar_code.strip().encode()).hexdigest()
+        student = db.query(Student).filter(Student.massar_code_hash == m_hash).first()
+
     if not student:
-        raise ValueError("Étudiant introuvable")
+        raise ValueError("Étudiant introuvable (ID ou Code Massar incorrect)")
     if not student.is_approved:
         raise ValueError("Le profil de cet étudiant n'a pas encore été validé par l'admin")
 
@@ -50,7 +57,7 @@ def create_diploma(db: Session, data: DiplomaCreate, institution_id: str, file_b
 
     diploma_data = {
     "unique_code": unique_code,
-    "student_id": data.student_id,
+    "student_id": student.id,
     "institution_id": institution_id,
     "degree_title": data.degree_title,
     "field_of_study": data.field_of_study,
@@ -59,7 +66,7 @@ def create_diploma(db: Session, data: DiplomaCreate, institution_id: str, file_b
      }
     diploma = Diploma(
         unique_code=unique_code,
-        student_id=data.student_id,
+        student_id=student.id,
         institution_id=institution_id,
         degree_title=data.degree_title,
         field_of_study=data.field_of_study,

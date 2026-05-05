@@ -13,6 +13,7 @@ from pydantic import BaseModel, EmailStr, Field, field_validator
 class StudentInfo(BaseModel):
     full_name: str = Field(min_length=2, max_length=255)
     national_id: str = Field(min_length=4, max_length=50)
+    massar_code: str = Field(min_length=5, max_length=50)
     birth_date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
 
 class InstitutionInfo(BaseModel):
@@ -80,9 +81,17 @@ class InstitutionOut(BaseModel):
 # STUDENTS
 # ─────────────────────────────────────────────────────────────────────────────
 
+class StudentBase(BaseModel):
+    full_name: str = Field(min_length=2, max_length=150)
+    national_id: str = Field(min_length=5, max_length=20)
+    massar_code: str = Field(min_length=5, max_length=50)
+    birth_date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")  # YYYY-MM-DD
+
+
 class StudentCreate(BaseModel):
     full_name: str = Field(min_length=2, max_length=255)
     national_id: str = Field(min_length=5, max_length=50)
+    massar_code: str = Field(min_length=5, max_length=50)
     birth_date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")  # YYYY-MM-DD
 
 
@@ -99,7 +108,8 @@ class StudentOut(BaseModel):
 # ─────────────────────────────────────────────────────────────────────────────
 
 class DiplomaCreate(BaseModel):
-    student_id: str
+    student_id: str | None = None
+    massar_code: str | None = None
     degree_title: str = Field(min_length=3, max_length=255)
     field_of_study: str = Field(min_length=2, max_length=255)
     graduation_date: datetime
@@ -124,6 +134,7 @@ class DiplomaOut(BaseModel):
     # Champs enrichis (décryptés côté serveur, uniquement pour l'institution propriétaire)
     student_name: str | None = None
     student_email: str | None = None
+    student_massar_code: str | None = None
 
     model_config = {"from_attributes": True}
 

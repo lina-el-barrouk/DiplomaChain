@@ -243,8 +243,11 @@ def list_diplomas(
                 if student:
                     try:
                         out.student_name = decrypt_sensitive(student.full_name_enc)
+                        if hasattr(student, 'massar_code_enc') and student.massar_code_enc:
+                            out.student_massar_code = decrypt_sensitive(student.massar_code_enc)
                     except Exception:
                         out.student_name = None
+                        out.student_massar_code = None
                     user_obj = db.query(User).filter(User.id == student.user_id).first()
                     out.student_email = user_obj.email if user_obj else None
                 results.append(out)

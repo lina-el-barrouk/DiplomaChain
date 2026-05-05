@@ -50,11 +50,14 @@ def register(payload: UserRegister, db: Session = Depends(get_db)):
 
     # Créer profil étudiant automatiquement
     if payload.role == "student" and payload.student:
+        import hashlib
         from app.models.models import Student
         student = Student(
             user_id=user.id,
             full_name_enc=encrypt_sensitive(payload.student.full_name),
             national_id_enc=encrypt_sensitive(payload.student.national_id),
+            massar_code_enc=encrypt_sensitive(payload.student.massar_code),
+            massar_code_hash=hashlib.sha256(payload.student.massar_code.encode()).hexdigest(),
             birth_date_enc=encrypt_sensitive(payload.student.birth_date),
             is_approved=False,
         )

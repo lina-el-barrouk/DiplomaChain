@@ -25,6 +25,7 @@ export default function Register() {
     role: "student",
     full_name: "",
     national_id: "",
+    massar_code: "",
     birth_date: "",
     institution_name: "",
     country: "",
@@ -45,6 +46,7 @@ export default function Register() {
           student: {
             full_name: form.full_name,
             national_id: form.national_id,
+            massar_code: form.massar_code,
             birth_date: form.birth_date,
           },
         }),
@@ -219,6 +221,21 @@ export default function Register() {
                       value={form.national_id}
                       onChange={(e) =>
                         setForm((f) => ({ ...f, national_id: e.target.value }))
+                      }
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label className="input-label">Code Massar / CNE *</label>
+                  <div className="input-icon-wrap">
+                    <User size={15} className="input-icon" />
+                    <input
+                      className="input input-with-icon mono"
+                      placeholder="J123456789"
+                      value={form.massar_code}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, massar_code: e.target.value }))
                       }
                       required
                     />

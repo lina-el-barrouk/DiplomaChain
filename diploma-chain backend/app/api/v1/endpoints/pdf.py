@@ -166,7 +166,7 @@ def download_bulk_template(
 ):
     """
     Télécharge le fichier Excel modèle (.xlsx) à remplir pour la génération en masse.
-    Colonnes : email_etudiant | titre_diplome | domaine | date_graduation | mention
+    Colonnes : code_massar | titre_diplome | domaine | date_graduation | mention
     """
     from openpyxl import Workbook
     from openpyxl.styles import Alignment, Font, PatternFill
@@ -176,7 +176,7 @@ def download_bulk_template(
     ws.title = "Diplômes"
 
     COLUMNS = [
-        ("email_etudiant",  "Email de l'étudiant (doit exister dans le système)"),
+        ("code_massar",  "Code Massar de l'étudiant (doit exister dans le système)"),
         ("titre_diplome",   "Titre du diplôme (ex : Master en Informatique)"),
         ("domaine",         "Domaine d'études (ex : Intelligence Artificielle)"),
         ("date_graduation", "Date de graduation (AAAA-MM-JJ ou JJ/MM/AAAA)"),
@@ -197,7 +197,7 @@ def download_bulk_template(
 
     # Ligne d'exemple
     ws.append([
-        "etudiant@exemple.com",
+        "P123456789",
         "Master en Informatique",
         "Intelligence Artificielle",
         "2024-06-30",
@@ -267,8 +267,8 @@ async def bulk_generate_diplomas(
         raise HTTPException(400, f"Impossible de lire le fichier Excel : {exc}")
 
     # ── Lire les en-têtes ─────────────────────────────────────────────────
-    raw_headers = [str(c.value).strip() if c.value is not None else "" for c in ws[1]]
-    REQUIRED = {"email_etudiant", "titre_diplome", "domaine", "date_graduation"}
+    raw_headers = [str(c.value).strip().lower() if c.value is not None else "" for c in ws[1]]
+    REQUIRED = {"code_massar", "titre_diplome", "domaine", "date_graduation"}
     missing = REQUIRED - set(raw_headers)
     if missing:
         raise HTTPException(400, f"Colonnes manquantes dans l'Excel : {', '.join(sorted(missing))}")
@@ -303,19 +303,19 @@ async def bulk_generate_diplomas(
             v = row[idx]
             return str(v).strip() if v is not None else None
 
-        email          = cell("email_etudiant")
+        massar_code    = cell("code_massar")
         degree_title   = cell("titre_diplome")
         field_of_study = cell("domaine")
         grad_raw       = cell("date_graduation")
         honors         = cell("mention") or None
 
         def err(msg: str):
-            results.append({"ligne": row_num, "email": email or "", "statut": "erreur",
+            results.append({"ligne": row_num, "code_massar": massar_code or "", "statut": "erreur",
                              "code": "", "message": msg})
 
         # Validation des champs obligatoires
-        if not email or not degree_title or not field_of_study or not grad_raw:
-            err("Champs obligatoires manquants (email, titre, domaine, date)")
+        if not massar_code or not degree_title or not field_of_study or not grad_raw:
+            err("Champs obligatoires manquants (code_massar, titre, domaine, date)")
             continue
 
         # Parsing de la date
@@ -340,14 +340,12 @@ async def bulk_generate_diplomas(
             continue
 
         # Chercher l'étudiant
-        user = db.query(UserModel).filter(UserModel.email == email).first()
-        if not user:
-            err("Aucun compte trouvé pour cet email")
-            continue
-
-        student = db.query(Student).filter(Student.user_id == user.id).first()
+        import hashlib
+        massar_code_hash = hashlib.sha256(massar_code.encode()).hexdigest()
+        student = db.query(Student).filter(Student.massar_code_hash == massar_code_hash).first()
+        
         if not student:
-            err("Profil étudiant introuvable pour cet utilisateur")
+            err("Aucun étudiant trouvé avec ce Code Massar")
             continue
 
         if not student.is_approved:
@@ -388,12 +386,12 @@ async def bulk_generate_diplomas(
             )
             save_generated_pdf(pdf_bytes, diploma.id)
 
-            safe_email = email.replace("@", "_at_").replace(".", "_")
-            filename = f"diplome_{safe_email}_{diploma.unique_code}.pdf"
+            safe_massar = massar_code.replace(" ", "_")
+            filename = f"diplome_{safe_massar}_{diploma.unique_code}.pdf"
             pdf_files[filename] = pdf_bytes
 
             results.append({
-                "ligne": row_num, "email": email,
+                "ligne": row_num, "code_massar": massar_code,
                 "statut": "succès", "code": diploma.unique_code,
                 "message": "Diplôme créé (en attente d'émission par l'institution)",
             })
@@ -401,7 +399,7 @@ async def bulk_generate_diplomas(
         except Exception as pdf_exc:
             # Le diplôme est déjà en base — on note juste que le PDF a échoué
             results.append({
-                "ligne": row_num, "email": email,
+                "ligne": row_num, "code_massar": massar_code,
                 "statut": "succès", "code": diploma.unique_code,
                 "message": f"Diplôme créé (PDF indisponible : {pdf_exc})",
             })

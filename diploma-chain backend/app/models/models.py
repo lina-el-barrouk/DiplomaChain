@@ -109,6 +109,8 @@ class Student(Base):
     # Données personnelles chiffrées en base
     full_name_enc: Mapped[str] = mapped_column(Text, nullable=False)
     national_id_enc: Mapped[str] = mapped_column(Text, nullable=False)
+    massar_code_enc: Mapped[str] = mapped_column(Text, nullable=False)
+    massar_code_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
     birth_date_enc: Mapped[str] = mapped_column(String(255), nullable=False)
     is_approved: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     rejection_reason: Mapped[str | None] = mapped_column(Text, nullable=True)

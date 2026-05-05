@@ -12,7 +12,7 @@ export default function InstitutionDiplomas() {
   const [revokeReason, setRevokeReason] = useState('')
   const [qrModal, setQrModal] = useState(null)
   const [search, setSearch] = useState('')
-  const [form, setForm] = useState({ student_id: '', degree_title: '', field_of_study: '', graduation_date: '', honors: '' })
+  const [form, setForm] = useState({ massar_code: '', degree_title: '', field_of_study: '', graduation_date: '', honors: '' })
 
   // Bulk state
   const [showBulk, setShowBulk] = useState(false)
@@ -42,7 +42,7 @@ export default function InstitutionDiplomas() {
       await diplomaApi.create({ ...form, graduation_date: new Date(form.graduation_date).toISOString() })
       toast.success('Diplôme créé ✓')
       setShowCreate(false)
-      setForm({ student_id: '', degree_title: '', field_of_study: '', graduation_date: '', honors: '' })
+      setForm({ massar_code: '', degree_title: '', field_of_study: '', graduation_date: '', honors: '' })
       load()
     } catch (e) { toast.error(e.response?.data?.detail || 'Erreur lors de la création') }
   }
@@ -135,7 +135,7 @@ export default function InstitutionDiplomas() {
       } else {
         const msg = typeof detail === 'string' ? detail : 'Erreur lors de la génération'
         toast.error(msg)
-        setBulkResults({ success: 0, total: 0, errors: 0, errorList: [{ ligne: '?', email: '', message: msg }] })
+        setBulkResults({ success: 0, total: 0, errors: 0, errorList: [{ ligne: '?', code_massar: '', message: msg }] })
       }
     } finally { setBulkLoading(false) }
   }
@@ -147,9 +147,9 @@ export default function InstitutionDiplomas() {
     const code  = (d.unique_code  || '').toUpperCase()
     const title = (d.degree_title || '').toLowerCase()
     const sname = (d.student_name || '').toLowerCase()
-    const semail = (d.student_email || '').toLowerCase()
+    const s_massar = (d.student_massar_code || '').toLowerCase()
     const q = search.toLowerCase()
-    return code.includes(search.toUpperCase()) || title.includes(q) || sname.includes(q) || semail.includes(q)
+    return code.includes(search.toUpperCase()) || title.includes(q) || sname.includes(q) || s_massar.includes(q)
   })
 
   return (
@@ -173,7 +173,7 @@ export default function InstitutionDiplomas() {
       {/* Search */}
       <div style={{ position: 'relative', marginBottom: 20 }}>
         <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)' }} />
-        <input className="input" style={{ paddingLeft: 38 }} placeholder="Rechercher par code, titre, nom ou email..."
+        <input className="input" style={{ paddingLeft: 38 }} placeholder="Rechercher par code, titre, nom ou code massar..."
           value={search} onChange={e => setSearch(e.target.value)} />
       </div>
 
@@ -191,7 +191,7 @@ export default function InstitutionDiplomas() {
               <tr>
                 <th>Code</th>
                 <th>Étudiant</th>
-                <th>Email</th>
+                <th>Code Massar</th>
                 <th>Titre</th>
                 <th>Statut</th>
                 <th>Blockchain</th>
@@ -221,7 +221,7 @@ export default function InstitutionDiplomas() {
                     )}
                   </td>
                   <td style={{ fontSize: 12, color: 'var(--text-2)' }}>
-                    {d.student_email || <span style={{ color: 'var(--text-3)' }}>—</span>}
+                    {d.student_massar_code || <span style={{ color: 'var(--text-3)' }}>—</span>}
                   </td>
                   <td style={{ color: 'var(--text-1)' }}>{d.degree_title}</td>
                   <td>
@@ -280,7 +280,7 @@ export default function InstitutionDiplomas() {
             {/* Colonnes attendues */}
             <div style={{ background: 'var(--bg-2)', borderRadius: 8, padding: '10px 14px', marginBottom: 20, fontSize: 12, color: 'var(--text-2)' }}>
               <strong style={{ color: 'var(--text-1)' }}>Colonnes requises :</strong>
-              <span style={{ marginLeft: 8, color: 'var(--gold)' }}>email_etudiant</span>
+              <span style={{ marginLeft: 8, color: 'var(--gold)' }}>code_massar</span>
               <span style={{ color: 'var(--text-3)' }}> · </span>
               <span style={{ color: 'var(--gold)' }}>titre_diplome</span>
               <span style={{ color: 'var(--text-3)' }}> · </span>
@@ -354,7 +354,7 @@ export default function InstitutionDiplomas() {
                     <p style={{ fontSize: 12, fontWeight: 600, color: '#f87171', marginBottom: 6 }}>Détail des erreurs :</p>
                     {bulkResults.errorList.map((e, i) => (
                       <p key={i} style={{ fontSize: 11, color: 'var(--text-2)', margin: '2px 0' }}>
-                        <span style={{ color: 'var(--text-3)' }}>Ligne {e.ligne} · {e.email || '—'}</span> — {e.message}
+                        <span style={{ color: 'var(--text-3)' }}>Ligne {e.ligne} · {e.code_massar || '—'}</span> — {e.message}
                       </p>
                     ))}
                   </div>
@@ -380,9 +380,9 @@ export default function InstitutionDiplomas() {
             <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 20, color: 'var(--text-1)' }}>Nouveau diplôme</h3>
             <form onSubmit={create}>
               <div className="form-group">
-                <label className="input-label">ID de l'étudiant *</label>
-                <input className="input mono" placeholder="UUID de l'étudiant" value={form.student_id}
-                  onChange={e => setForm(f => ({ ...f, student_id: e.target.value }))} required />
+                <label className="input-label">Code Massar de l'étudiant *</label>
+                <input className="input mono" placeholder="ex: P123456789" value={form.massar_code}
+                  onChange={e => setForm(f => ({ ...f, massar_code: e.target.value }))} required />
               </div>
               <div className="form-group">
                 <label className="input-label">Titre du diplôme *</label>
