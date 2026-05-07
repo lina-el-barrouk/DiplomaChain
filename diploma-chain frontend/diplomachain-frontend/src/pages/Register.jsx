@@ -210,12 +210,16 @@ export default function Register() {
                 <p
                   style={{
                     fontSize: 12,
-                    color: "var(--gold)",
+                    color: "var(--primary)",
                     marginBottom: 14,
                     fontWeight: 500,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
                   }}
                 >
-                  🎓 Informations d'identité — seront vérifiées par l'admin
+                  <GraduationCap size={14} />
+                  Informations d'identité — seront vérifiées par l'admin
                 </p>
                 <div className="form-group">
                   <label className="input-label">Nom complet *</label>
@@ -292,12 +296,16 @@ export default function Register() {
                 <p
                   style={{
                     fontSize: 12,
-                    color: "var(--gold)",
+                    color: "var(--primary)",
                     marginBottom: 14,
                     fontWeight: 500,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
                   }}
                 >
-                  🏛 Informations de l'établissement
+                  <Building2 size={14} />
+                  Informations de l'établissement
                 </p>
                 <div className="form-group">
                   <label className="input-label">

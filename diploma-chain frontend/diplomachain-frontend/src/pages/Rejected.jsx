@@ -10,7 +10,7 @@ export default function Rejected() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "var(--bg-0)",
+        background: "linear-gradient(160deg, #ffffff 0%, var(--bg-0) 40%, var(--green-50) 100%)",
         padding: 24,
       }}
     >
@@ -21,14 +21,14 @@ export default function Rejected() {
           width: "100%",
           textAlign: "center",
           padding: 40,
-          borderColor: "rgba(231,76,60,0.3)",
+          borderColor: "rgba(220, 38, 38, 0.2)",
         }}
       >
         <div
           style={{
             width: 64,
             height: 64,
-            background: "rgba(231,76,60,0.1)",
+            background: "rgba(220, 38, 38, 0.06)",
             borderRadius: "50%",
             display: "flex",
             alignItems: "center",
@@ -36,7 +36,7 @@ export default function Rejected() {
             margin: "0 auto 20px",
           }}
         >
-          <XCircle size={28} style={{ color: "#e74c3c" }} />
+          <XCircle size={28} style={{ color: "var(--danger)" }} />
         </div>
         <h2
           style={{
@@ -61,13 +61,13 @@ export default function Rejected() {
         {state?.reason && (
           <div
             style={{
-              background: "rgba(231,76,60,0.08)",
-              border: "1px solid rgba(231,76,60,0.2)",
+              background: "rgba(220, 38, 38, 0.05)",
+              border: "1px solid rgba(220, 38, 38, 0.15)",
               borderRadius: 8,
               padding: "12px 16px",
               marginBottom: 24,
               fontSize: 13,
-              color: "#e74c3c",
+              color: "var(--danger)",
               textAlign: "left",
             }}
           >

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
 import { pdfApi } from '../../api'
-import { Upload, FileText, CheckCircle } from 'lucide-react'
+import { Upload, FileText, CheckCircle, Info } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function InstitutionTemplate() {
@@ -27,7 +27,7 @@ export default function InstitutionTemplate() {
     try {
       const { data } = await pdfApi.uploadTemplate(file)
       setTemplate({ has_template: true, ...data })
-      toast.success('Template uploadé avec succès ✓')
+      toast.success('Template uploadé avec succès')
     } catch (e) {
       toast.error(e.response?.data?.detail || 'Erreur lors de l\'upload')
     } finally {
@@ -52,7 +52,7 @@ export default function InstitutionTemplate() {
       {/* Instructions */}
       <div className="card" style={{ marginBottom: 20, borderColor: 'rgba(52,152,219,0.25)', background: 'rgba(52,152,219,0.04)' }}>
         <h3 style={{ fontSize: 14, fontWeight: 600, color: '#3498db', marginBottom: 12 }}>
-          📋 Comment préparer votre template
+          <Info size={15} style={{ marginRight: 6, flexShrink: 0 }} /> Comment préparer votre template
         </h3>
         <p style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 12 }}>
           Créez votre design dans Word, Canva ou PowerPoint avec ces zones de texte exactes :
@@ -69,7 +69,7 @@ export default function InstitutionTemplate() {
             ['{{QR_CODE}}', 'QR code de vérification'],
           ].map(([ph, desc]) => (
             <div key={ph} style={{ background: 'var(--bg-2)', borderRadius: 6, padding: '8px 12px' }}>
-              <div className="mono" style={{ fontSize: 12, color: 'var(--gold)', fontWeight: 500 }}>{ph}</div>
+              <div className="mono" style={{ fontSize: 12, color: 'var(--primary)', fontWeight: 500 }}>{ph}</div>
               <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>{desc}</div>
             </div>
           ))}
@@ -83,12 +83,12 @@ export default function InstitutionTemplate() {
       <div
         className="card"
         style={{
-          border: `2px dashed ${dragOver ? 'var(--gold)' : 'var(--border)'}`,
+          border: `2px dashed ${dragOver ? 'var(--primary)' : 'var(--border)'}`,
           textAlign: 'center',
           padding: '48px 24px',
           cursor: 'pointer',
           transition: 'border-color 0.2s',
-          background: dragOver ? 'var(--gold-glow)' : 'var(--bg-2)',
+          background: dragOver ? 'var(--green-50)' : 'var(--bg-1)',
         }}
         onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
         onDragLeave={() => setDragOver(false)}
@@ -110,7 +110,7 @@ export default function InstitutionTemplate() {
           </>
         ) : (
           <>
-            <Upload size={36} style={{ color: 'var(--gold)', margin: '0 auto 16px' }} />
+            <Upload size={36} style={{ color: 'var(--primary)', margin: '0 auto 16px' }} />
             <p style={{ fontSize: 16, fontWeight: 500, color: 'var(--text-1)', marginBottom: 6 }}>
               Glissez votre PDF ici
             </p>
@@ -125,8 +125,8 @@ export default function InstitutionTemplate() {
       {!loading && template?.has_template && (
         <div className="card card-gold fade-in" style={{ marginTop: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div style={{ width: 44, height: 44, background: 'rgba(46,204,113,0.1)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <CheckCircle size={22} style={{ color: '#2ecc71' }} />
+            <div style={{ width: 44, height: 44, background: 'rgba(22,163,74,0.08)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <CheckCircle size={22} style={{ color: 'var(--success)' }} />
             </div>
             <div>
               <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-1)' }}>Template actif</div>
@@ -136,7 +136,7 @@ export default function InstitutionTemplate() {
               </div>
             </div>
             <div style={{ marginLeft: 'auto' }}>
-              <span className="badge badge-success">✓ Actif</span>
+              <span className="badge badge-success"><CheckCircle size={11} /> Actif</span>
             </div>
           </div>
           <p style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 14 }}>
@@ -147,7 +147,7 @@ export default function InstitutionTemplate() {
 
       {!loading && !template?.has_template && (
         <div style={{ marginTop: 16, padding: '12px 16px', background: 'var(--bg-2)', borderRadius: 8, fontSize: 13, color: 'var(--text-3)' }}>
-          ℹ Aucun template configuré — un design élégant par défaut sera utilisé lors de la génération des PDFs.
+          <Info size={14} style={{ marginRight: 6, flexShrink: 0, verticalAlign: 'middle' }} /> Aucun template configuré — un design élégant par défaut sera utilisé lors de la génération des PDFs.
         </div>
       )}
     </Layout>

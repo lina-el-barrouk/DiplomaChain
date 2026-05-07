@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
 import { institutionApi } from '../../api'
-import { CheckCircle, XCircle, Building2, RefreshCw } from 'lucide-react'
+import { CheckCircle, XCircle, Building2, RefreshCw, Clock } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function AdminInstitutions() {
@@ -24,7 +24,7 @@ export default function AdminInstitutions() {
   const approve = async (id) => {
     try {
       await institutionApi.approve(id)
-      toast.success('Institution approuvée ✓')
+      toast.success('Institution approuvée')
       load()
     } catch (e) { toast.error(e.response?.data?.detail || 'Erreur') }
   }
@@ -84,7 +84,7 @@ export default function AdminInstitutions() {
                   <td><span className="mono" style={{ fontSize: 12 }}>{inst.accreditation_number}</span></td>
                   <td>
                     <span className={`badge ${inst.is_approved ? 'badge-success' : 'badge-muted'}`}>
-                      {inst.is_approved ? '✓ Approuvée' : '⏳ En attente'}
+                      {inst.is_approved ? <><CheckCircle size={11} /> Approuvée</> : <><Clock size={11} /> En attente</>}
                     </span>
                   </td>
                   <td>

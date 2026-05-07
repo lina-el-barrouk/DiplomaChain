@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
 import { studentApi } from '../../api'
-import { User, Save, Shield } from 'lucide-react'
+import { User, Save, Shield, CheckCircle, Clock } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function StudentProfile() {
@@ -28,7 +28,7 @@ export default function StudentProfile() {
       const { data } = await studentApi.createMe(form)
       setProfile(data)
       setCreating(false)
-      toast.success('Profil créé ✓ — En attente de validation par l\'admin')
+      toast.success('Profil créé — En attente de validation par l\'admin')
     } catch (e) {
       toast.error(e.response?.data?.detail || 'Erreur')
     } finally {
@@ -52,8 +52,8 @@ export default function StudentProfile() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
         <div className="card card-gold">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-            <div style={{ width: 40, height: 40, background: 'var(--gold-glow)', border: '1px solid var(--border-strong)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <User size={20} style={{ color: 'var(--gold)' }} />
+            <div style={{ width: 40, height: 40, background: 'var(--green-50)', border: '1px solid var(--border-strong)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <User size={20} style={{ color: 'var(--primary)' }} />
             </div>
             <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-1)' }}>
               {creating ? 'Créer mon profil' : 'Mes informations'}
@@ -100,32 +100,32 @@ export default function StudentProfile() {
 
         <div className="card">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-            <Shield size={18} style={{ color: 'var(--gold)' }} />
+            <Shield size={18} style={{ color: 'var(--primary)' }} />
             <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-1)' }}>Sécurité & Confidentialité</h3>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {[
               { label: 'Chiffrement des données', value: 'AES-256 (Fernet)', ok: true },
-              { label: 'Validation identité', value: profile ? (profile.is_approved ? 'Validé ✓' : 'En attente') : 'Non créé', ok: !!profile?.is_approved },
+              { label: 'Validation identité', value: profile ? (profile.is_approved ? 'Validé' : 'En attente') : 'Non créé', ok: !!profile?.is_approved },
               { label: 'Stockage CIN', value: 'Chiffré en base', ok: true },
             ].map(s => (
               <div key={s.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'var(--bg-3)', borderRadius: 8 }}>
                 <span style={{ fontSize: 13, color: 'var(--text-2)' }}>{s.label}</span>
-                <span style={{ fontSize: 12, color: s.ok ? '#2ecc71' : '#f39c12', fontWeight: 500 }}>{s.value}</span>
+                <span style={{ fontSize: 12, color: s.ok ? 'var(--success)' : 'var(--warning)', fontWeight: 500 }}>{s.value}</span>
               </div>
             ))}
           </div>
 
           {!creating && !profile?.is_approved && (
-            <div style={{ marginTop: 16, padding: '12px 14px', background: 'rgba(243,156,18,0.06)', border: '1px solid rgba(243,156,18,0.2)', borderRadius: 8, fontSize: 13, color: '#f39c12' }}>
-              ⏳ Votre profil est en attente de validation par un administrateur. Il vérifiera que vos informations correspondent à votre CIN.
+            <div style={{ marginTop: 16, padding: '12px 14px', background: 'rgba(217,119,6,0.06)', border: '1px solid rgba(217,119,6,0.15)', borderRadius: 8, fontSize: 13, color: 'var(--warning)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Clock size={14} style={{ flexShrink: 0 }} /> Votre profil est en attente de validation par un administrateur. Il vérifiera que vos informations correspondent à votre CIN.
             </div>
           )}
 
           {!creating && profile?.is_approved && (
-            <div style={{ marginTop: 16, padding: '12px 14px', background: 'rgba(46,204,113,0.06)', border: '1px solid rgba(46,204,113,0.2)', borderRadius: 8, fontSize: 13, color: '#2ecc71' }}>
-              ✓ Votre identité a été vérifiée. Vous pouvez recevoir des diplômes officiels.
+            <div style={{ marginTop: 16, padding: '12px 14px', background: 'rgba(22,163,74,0.06)', border: '1px solid rgba(22,163,74,0.15)', borderRadius: 8, fontSize: 13, color: 'var(--success)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <CheckCircle size={14} style={{ flexShrink: 0 }} /> Votre identité a été vérifiée. Vous pouvez recevoir des diplômes officiels.
             </div>
           )}
         </div>

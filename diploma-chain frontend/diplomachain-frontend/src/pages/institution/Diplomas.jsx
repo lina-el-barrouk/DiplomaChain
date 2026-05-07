@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
 import { diplomaApi, pdfApi, qrApi } from '../../api'
-import { Plus, Send, XCircle, Download, QrCode, RefreshCw, Search, FileSpreadsheet, UploadCloud, CheckCircle, AlertCircle, X } from 'lucide-react'
+import { Plus, Send, XCircle, Download, QrCode, RefreshCw, Search, FileSpreadsheet, UploadCloud, CheckCircle, AlertCircle, X, Link as LinkIcon, Clock, FileText } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function InstitutionDiplomas() {
@@ -39,7 +39,7 @@ export default function InstitutionDiplomas() {
     e.preventDefault()
     try {
       await diplomaApi.create({ ...form, graduation_date: new Date(form.graduation_date).toISOString() })
-      toast.success('Diplôme créé ✓')
+      toast.success('Diplôme créé avec succès')
       setShowCreate(false)
       setForm({ massar_code: '', degree_title: '', field_of_study: '', graduation_date: '', honors: '' })
       load()
@@ -47,12 +47,12 @@ export default function InstitutionDiplomas() {
   }
 
   const issue = async (id) => {
-    try { await diplomaApi.issue(id); toast.success('Diplôme émis ⛓'); load() }
+    try { await diplomaApi.issue(id); toast.success('Diplôme émis avec succès'); load() }
     catch (e) { toast.error(e.response?.data?.detail || 'Erreur') }
   }
 
   const anchor = async (id) => {
-    try { await diplomaApi.anchor(id); toast.success('Diplôme ancré sur Hedera ⛓'); load() }
+    try { await diplomaApi.anchor(id); toast.success('Diplôme ancré sur Hedera'); load() }
     catch (e) { toast.error(e.response?.data?.detail || 'Erreur lors de l\'ancrage') }
   }
 
@@ -201,15 +201,15 @@ export default function InstitutionDiplomas() {
             <tbody>
               {filtered.map(d => (
                 <tr key={d.id}>
-                  <td><span className="mono" style={{ fontSize: 12, color: 'var(--gold)' }}>{d.unique_code}</span></td>
+                  <td><span className="mono" style={{ fontSize: 12, color: 'var(--primary)' }}>{d.unique_code}</span></td>
                   <td>
                     {d.student_name ? (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <div style={{
                           width: 28, height: 28, borderRadius: '50%',
-                          background: 'linear-gradient(135deg, var(--gold), #b8922e)',
+                          background: 'linear-gradient(135deg, var(--green-600), var(--green-800))',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: 11, fontWeight: 700, color: '#000', flexShrink: 0,
+                          fontSize: 11, fontWeight: 700, color: '#fff', flexShrink: 0,
                         }}>
                           {d.student_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                         </div>
@@ -225,10 +225,10 @@ export default function InstitutionDiplomas() {
                   <td style={{ color: 'var(--text-1)' }}>{d.degree_title}</td>
                   <td>
                     <span className={`badge ${d.status === 'issued' ? 'badge-success' : d.status === 'revoked' ? 'badge-danger' : 'badge-muted'}`}>
-                      {d.status === 'issued' ? '✓ Émis' : d.status === 'revoked' ? '✗ Révoqué' : '⏳ En attente'}
+                      {d.status === 'issued' ? <><CheckCircle size={11} /> Émis</> : d.status === 'revoked' ? <><XCircle size={11} /> Révoqué</> : <><Clock size={11} /> En attente</>}
                     </span>
                   </td>
-                  <td>{d.blockchain_anchored ? <span className="badge badge-gold">⛓ Ancré</span> : <span style={{ color: 'var(--text-3)', fontSize: 12 }}>—</span>}</td>
+                  <td>{d.blockchain_anchored ? <span className="badge badge-gold"><LinkIcon size={11} /> Ancré</span> : <span style={{ color: 'var(--text-3)', fontSize: 12 }}>—</span>}</td>
                   <td style={{ fontSize: 12 }}>{new Date(d.created_at).toLocaleDateString('fr-FR')}</td>
                   <td>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', minWidth: '180px' }}>
@@ -261,31 +261,31 @@ export default function InstitutionDiplomas() {
 
       {/* ── Bulk Modal ───────────────────────────────────────────────────────── */}
       {showBulk && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
           <div className="card" style={{ width: '100%', maxWidth: 600, padding: 32, position: 'relative' }}>
             <button onClick={closeBulk} style={{ position: 'absolute', top: 16, right: 16, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)' }}><X size={20} /></button>
 
             <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6, color: 'var(--text-1)' }}>
-              <FileSpreadsheet size={20} style={{ marginRight: 8, verticalAlign: 'middle', color: 'var(--gold)' }} />
+              <FileSpreadsheet size={20} style={{ marginRight: 8, verticalAlign: 'middle', color: 'var(--primary)' }} />
               Génération en masse
             </h3>
             <p style={{ color: 'var(--text-3)', fontSize: 13, marginBottom: 24 }}>
               Uploadez un fichier Excel (.xlsx) contenant les données des étudiants.<br />
-              Un diplôme en <strong style={{ color: 'var(--gold)' }}>attente d'émission</strong> sera créé pour chaque ligne valide,
+              Un diplôme en <strong style={{ color: 'var(--primary)' }}>attente d'émission</strong> sera créé pour chaque ligne valide,
               avec un PDF de prévisualisation dans le ZIP.<br />
               <span style={{ color: 'var(--text-3)', fontSize: 12 }}>➜ Revenez ensuite dans la liste et cliquez <strong>Émettre</strong> sur chaque diplôme pour l'ancrer sur Hedera.</span>
             </p>
 
             {/* Colonnes attendues */}
-            <div style={{ background: 'var(--bg-2)', borderRadius: 8, padding: '10px 14px', marginBottom: 20, fontSize: 12, color: 'var(--text-2)' }}>
+            <div style={{ background: 'var(--bg-3)', borderRadius: 8, padding: '10px 14px', marginBottom: 20, fontSize: 12, color: 'var(--text-2)' }}>
               <strong style={{ color: 'var(--text-1)' }}>Colonnes requises :</strong>
-              <span style={{ marginLeft: 8, color: 'var(--gold)' }}>code_massar</span>
+              <span style={{ marginLeft: 8, color: 'var(--primary)' }}>code_massar</span>
               <span style={{ color: 'var(--text-3)' }}> · </span>
-              <span style={{ color: 'var(--gold)' }}>titre_diplome</span>
+              <span style={{ color: 'var(--primary)' }}>titre_diplome</span>
               <span style={{ color: 'var(--text-3)' }}> · </span>
-              <span style={{ color: 'var(--gold)' }}>domaine</span>
+              <span style={{ color: 'var(--primary)' }}>domaine</span>
               <span style={{ color: 'var(--text-3)' }}> · </span>
-              <span style={{ color: 'var(--gold)' }}>date_graduation</span>
+              <span style={{ color: 'var(--primary)' }}>date_graduation</span>
               <span style={{ color: 'var(--text-3)' }}> · </span>
               <span>mention <em>(optionnel)</em></span>
             </div>
@@ -304,13 +304,13 @@ export default function InstitutionDiplomas() {
               onDrop={handleBulkDrop}
               onClick={() => bulkInputRef.current?.click()}
               style={{
-                border: `2px dashed ${bulkDragging ? 'var(--gold)' : bulkFile ? 'var(--success, #4ade80)' : 'var(--border)'}`,
+                border: `2px dashed ${bulkDragging ? 'var(--primary)' : bulkFile ? 'var(--success)' : 'var(--border)'}`,
                 borderRadius: 10,
                 padding: '32px 20px',
                 textAlign: 'center',
                 cursor: 'pointer',
                 transition: 'all .2s',
-                background: bulkDragging ? 'rgba(201,168,76,0.06)' : 'var(--bg-2)',
+                background: bulkDragging ? 'var(--green-50)' : 'var(--bg-0)',
                 marginBottom: 20,
               }}>
               <input ref={bulkInputRef} type="file" accept=".xlsx,.xls" style={{ display: 'none' }}
@@ -374,7 +374,7 @@ export default function InstitutionDiplomas() {
 
       {/* Create Modal */}
       {showCreate && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
           <div className="card" style={{ width: '100%', maxWidth: 500, padding: 28 }}>
             <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 20, color: 'var(--text-1)' }}>Nouveau diplôme</h3>
             <form onSubmit={create}>
@@ -417,7 +417,7 @@ export default function InstitutionDiplomas() {
 
       {/* Revoke Modal */}
       {showRevoke && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div className="card" style={{ width: 420, padding: 28 }}>
             <h3 style={{ marginBottom: 16, color: 'var(--text-1)' }}>Révoquer le diplôme</h3>
             <textarea className="input" placeholder="Motif de révocation..." value={revokeReason}
@@ -432,7 +432,7 @@ export default function InstitutionDiplomas() {
 
       {/* QR Modal */}
       {qrModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
           onClick={() => setQrModal(null)}>
           <div className="card" style={{ padding: 28, textAlign: 'center' }} onClick={e => e.stopPropagation()}>
             <h3 style={{ marginBottom: 16, color: 'var(--text-1)' }}>QR Code du diplôme</h3>

@@ -6,12 +6,12 @@
   padding: 40px 24px;
   position: relative;
   overflow: hidden;
+  background: linear-gradient(160deg, #ffffff 0%, var(--bg-0) 50%, var(--green-50) 100%);
 }
 
 .verify-bg {
   position: fixed;
   inset: 0;
-  background: var(--bg-0);
   z-index: 0;
 }
 
@@ -22,7 +22,7 @@
   transform: translateX(-50%);
   width: 700px;
   height: 500px;
-  background: radial-gradient(ellipse, rgba(201,168,76,0.06) 0%, transparent 65%);
+  background: radial-gradient(ellipse, rgba(178, 225, 203, 0.2) 0%, transparent 65%);
 }
 
 .verify-container {
@@ -40,11 +40,11 @@
 }
 
 .verify-logo-mark {
-  width: 48px;
-  height: 48px;
-  background: var(--gold);
-  color: var(--bg-0);
-  border-radius: 12px;
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, var(--green-700), var(--green-900));
+  color: #ffffff;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -52,6 +52,7 @@
   font-weight: 700;
   font-size: 18px;
   margin: 0 auto 16px;
+  box-shadow: 0 4px 16px rgba(26, 107, 60, 0.25);
 }
 
 .verify-title {
@@ -85,9 +86,9 @@
   overflow: hidden;
 }
 
-.result-valid { border-color: rgba(46,204,113,0.3); }
-.result-revoked { border-color: rgba(231,76,60,0.3); }
-.result-invalid { border-color: rgba(243,156,18,0.3); }
+.result-valid { border-color: rgba(22, 163, 74, 0.2); }
+.result-revoked { border-color: rgba(220, 38, 38, 0.2); }
+.result-invalid { border-color: rgba(217, 119, 6, 0.2); }
 
 .result-icon-row {
   display: flex;
@@ -96,9 +97,9 @@
   margin-bottom: 20px;
 }
 
-.icon-success { color: #2ecc71; }
-.icon-danger { color: #e74c3c; }
-.icon-warning { color: #f39c12; }
+.icon-success { color: var(--success); }
+.icon-danger { color: var(--danger); }
+.icon-warning { color: var(--warning); }
 
 .result-status {
   font-size: 18px;
@@ -143,12 +144,13 @@
   color: var(--text-1);
 }
 
-.result-mention { color: var(--gold); font-weight: 500; }
+.result-mention { color: var(--primary); font-weight: 500; }
 
 .blockchain-section {
-  background: var(--bg-1);
+  background: var(--green-50);
   border-radius: var(--radius);
-  padding: 14px;
+  padding: 16px;
+  border: 1px solid var(--green-200);
 }
 
 .blockchain-header {
@@ -168,8 +170,8 @@
   margin-bottom: 6px;
 }
 
-.anchored { color: #2ecc71; }
-.not-anchored { color: #f39c12; }
+.anchored { color: var(--success); }
+.not-anchored { color: var(--warning); }
 
 .blockchain-tx {
   font-size: 11px;
@@ -200,7 +202,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  color: #e74c3c;
-  border-color: rgba(231,76,60,0.3);
+  color: var(--danger);
+  border-color: rgba(220, 38, 38, 0.2);
   font-size: 14px;
 }

@@ -18,6 +18,9 @@ import {
   Cpu,
   Globe,
   QrCode,
+  Link as LinkIcon,
+  Camera,
+  CameraOff,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import "./Landing.css";
@@ -179,11 +182,7 @@ export default function Landing() {
             <span>Propulsé par Hedera Hashgraph</span>
           </div>
           <h1 className="hero-title">
-            Des diplômes
-            <br />
-            <span className="hero-title-gold">infalsifiables</span>
-            <br />
-            sur blockchain
+            Des diplômes <span className="hero-title-gold">infalsifiables</span> sur blockchain
           </h1>
           <p className="hero-desc">
             DiplomaChain ancre chaque diplôme sur la blockchain Hedera. Vérifiez
@@ -257,7 +256,7 @@ export default function Landing() {
                 </div>
                 <p className="qr-hint">
                   {scanning
-                    ? "📷 Pointez la caméra vers le QR code du diplôme..."
+                    ? "Pointez la caméra vers le QR code du diplôme..."
                     : "Cliquez pour démarrer la caméra"}
                 </p>
                 {!scanning ? (
@@ -265,11 +264,11 @@ export default function Landing() {
                     className="btn btn-primary btn-sm"
                     onClick={startCamera}
                   >
-                    Démarrer la caméra
+                    <Camera size={14} /> Démarrer la caméra
                   </button>
                 ) : (
                   <button className="btn btn-ghost btn-sm" onClick={stopCamera}>
-                    Arrêter
+                    <CameraOff size={14} /> Arrêter
                   </button>
                 )}
               </div>
@@ -298,7 +297,7 @@ export default function Landing() {
                 <div className="res-body">
                   <div className="res-title">
                     {result.valid
-                      ? "Diplôme authentique ✓"
+                      ? "Diplôme authentique"
                       : result.reason && result.reason.includes("révoqué")
                         ? "Diplôme révoqué"
                         : "Diplôme introuvable"}
@@ -310,8 +309,8 @@ export default function Landing() {
                           <span style={{
                             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                             width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
-                            background: 'linear-gradient(135deg, var(--gold), #b8922e)',
-                            fontSize: 9, fontWeight: 700, color: '#000',
+                            background: 'linear-gradient(135deg, var(--green-600), var(--green-800))',
+                            fontSize: 9, fontWeight: 700, color: '#fff',
                           }}>
                             {result.student_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                           </span>
@@ -328,7 +327,10 @@ export default function Landing() {
                         <span>{result.field_of_study}</span>
                       )}
                       {result.blockchain_anchored && (
-                        <span className="res-chain">⛓ Ancré sur Hedera</span>
+                        <span className="res-chain">
+                          <LinkIcon size={11} style={{ marginRight: 4 }} />
+                          Ancré sur Hedera
+                        </span>
                       )}
                     </div>
                   )}
@@ -375,28 +377,28 @@ export default function Landing() {
                 icon: <GraduationCap size={22} />,
                 title: "L'étudiant crée son profil",
                 desc: "L'étudiant s'inscrit et soumet ses informations d'identité. Un administrateur vérifie et valide son identité via sa CIN.",
-                color: "#3498db",
+                color: "var(--info)",
               },
               {
                 num: "02",
                 icon: <Building2 size={22} />,
                 title: "L'institution émet le diplôme",
                 desc: "L'institution approuvée crée le diplôme et l'émet officiellement. Le diplôme est ancré en temps réel sur Hedera.",
-                color: "#c9a84c",
+                color: "var(--primary)",
               },
               {
                 num: "03",
                 icon: <FileCheck size={22} />,
                 title: "Vérification instantanée",
                 desc: "N'importe qui peut vérifier l'authenticité d'un diplôme via son code unique ou en scannant le QR code.",
-                color: "#2ecc71",
+                color: "var(--success)",
               },
               {
                 num: "04",
                 icon: <Globe size={22} />,
                 title: "Preuve blockchain mondiale",
                 desc: "Chaque diplôme est ancré sur Hedera Hashgraph — un registre distribué immuable accessible publiquement.",
-                color: "#9b59b6",
+                color: "#6d28d9",
               },
             ].map((s, i) => (
               <div key={i} className="step-card">
@@ -405,7 +407,7 @@ export default function Landing() {
                 </div>
                 <div
                   className="step-icon"
-                  style={{ background: `${s.color}18`, color: s.color }}
+                  style={{ background: `${s.color}12`, color: s.color }}
                 >
                   {s.icon}
                 </div>
@@ -597,18 +599,18 @@ export default function Landing() {
                 <div className="sec-card-header">
                   <span
                     className="mono"
-                    style={{ fontSize: 12, color: "var(--gold)" }}
+                    style={{ fontSize: 12, color: "var(--primary)" }}
                   >
                     diploma.verify()
                   </span>
                 </div>
                 <div className="sec-card-body">
                   {[
-                    ["unique_code", '"DC-6PCX-T3DR-HXEU"', "#c9a84c"],
-                    ["valid", "true", "#2ecc71"],
-                    ["blockchain_anchored", "true", "#2ecc71"],
-                    ["hedera_tx", '"0.0.1234@..."', "#3498db"],
-                    ["sha256_hash", '"3847fe28..."', "#9b59b6"],
+                    ["unique_code", '"DC-6PCX-T3DR-HXEU"', "var(--primary)"],
+                    ["valid", "true", "var(--success)"],
+                    ["blockchain_anchored", "true", "var(--success)"],
+                    ["hedera_tx", '"0.0.1234@..."', "var(--info)"],
+                    ["sha256_hash", '"3847fe28..."', "#6d28d9"],
                   ].map(([k, v, c], i) => (
                     <div key={i} className="sec-line">
                       <span style={{ color: "var(--text-3)" }}>{k}:</span>

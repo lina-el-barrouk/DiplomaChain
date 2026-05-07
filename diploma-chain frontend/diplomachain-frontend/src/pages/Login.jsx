@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../AuthContext";
 import { authApi } from "../api";
 import toast from "react-hot-toast";
-import { Lock, Mail, ChevronRight, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { Lock, Mail, ChevronRight, ArrowLeft, Eye, EyeOff, Search } from "lucide-react";
 import "./Auth.css";
 
 export default function Login() {
@@ -139,7 +139,7 @@ export default function Login() {
 
           <div className="auth-verify-link">
             <Link to="/verify/CODE" className="auth-link-muted">
-              🔍 Vérifier un diplôme publiquement
+              <Search size={12} /> Vérifier un diplôme publiquement
             </Link>
           </div>
         </div>

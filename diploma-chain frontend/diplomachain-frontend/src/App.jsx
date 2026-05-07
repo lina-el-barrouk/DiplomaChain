@@ -35,6 +35,7 @@ function ProtectedRoute({ children, roles }) {
           justifyContent: "center",
           height: "100vh",
           color: "var(--text-3)",
+          fontFamily: "var(--font-body)",
         }}
       >
         Chargement...
@@ -172,17 +173,18 @@ export default function App() {
           position="top-right"
           toastOptions={{
             style: {
-              background: "var(--bg-3)",
+              background: "var(--bg-1)",
               color: "var(--text-1)",
               border: "1px solid var(--border)",
               fontFamily: "var(--font-body)",
               fontSize: "14px",
+              boxShadow: "var(--shadow)",
             },
             success: {
-              iconTheme: { primary: "#2ecc71", secondary: "var(--bg-3)" },
+              iconTheme: { primary: "#16a34a", secondary: "#ffffff" },
             },
             error: {
-              iconTheme: { primary: "#e74c3c", secondary: "var(--bg-3)" },
+              iconTheme: { primary: "#dc2626", secondary: "#ffffff" },
             },
           }}
         />

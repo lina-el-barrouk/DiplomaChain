@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
 import { diplomaApi, institutionApi } from '../../api'
-import { ScrollText, CheckCircle, XCircle, Clock, Link } from 'lucide-react'
+import { ScrollText, CheckCircle, XCircle, Clock, Link as LinkIcon, AlertCircle } from 'lucide-react'
 
 export default function InstitutionDashboard() {
   const [diplomas, setDiplomas] = useState([])
@@ -30,25 +30,25 @@ export default function InstitutionDashboard() {
         <h1 className="page-title">
           {profile ? profile.name : 'Tableau de bord'}
         </h1>
-        <p className="page-subtitle">
+        <p className="page-subtitle" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {profile?.is_approved
-            ? '✓ Institution approuvée — vous pouvez émettre des diplômes'
-            : '⏳ En attente d\'approbation par un administrateur'}
+            ? <><CheckCircle size={14} style={{ color: 'var(--success)' }} /> Institution approuvée — vous pouvez émettre des diplômes</>
+            : <><Clock size={14} style={{ color: 'var(--warning)' }} /> En attente d'approbation par un administrateur</>}
         </p>
       </div>
 
       {!profile?.is_approved && (
-        <div style={{ background: 'rgba(243,156,18,0.08)', border: '1px solid rgba(243,156,18,0.25)', borderRadius: 10, padding: '14px 18px', marginBottom: 24, fontSize: 14, color: '#f39c12' }}>
-          ⚠ Votre institution est en attente d'approbation. Un administrateur doit valider votre compte avant que vous puissiez créer des diplômes.
+        <div style={{ background: 'rgba(217,119,6,0.06)', border: '1px solid rgba(217,119,6,0.2)', borderRadius: 10, padding: '14px 18px', marginBottom: 24, fontSize: 14, color: 'var(--warning)', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <AlertCircle size={18} /> Votre institution est en attente d'approbation. Un administrateur doit valider votre compte avant que vous puissiez créer des diplômes.
         </div>
       )}
 
       <div className="stats-grid fade-in">
         {[
-          { label: 'Diplômes émis', value: issued, icon: CheckCircle, color: '#2ecc71', bg: 'rgba(46,204,113,0.1)' },
-          { label: 'En attente', value: pending, icon: Clock, color: '#f39c12', bg: 'rgba(243,156,18,0.1)' },
-          { label: 'Révoqués', value: revoked, icon: XCircle, color: '#e74c3c', bg: 'rgba(231,76,60,0.1)' },
-          { label: 'Sur blockchain', value: anchored, icon: Link, color: '#c9a84c', bg: 'rgba(201,168,76,0.1)', gold: true },
+          { label: 'Diplômes émis', value: issued, icon: CheckCircle, color: 'var(--success)', bg: 'rgba(22,163,74,0.06)' },
+          { label: 'En attente', value: pending, icon: Clock, color: 'var(--warning)', bg: 'rgba(217,119,6,0.06)' },
+          { label: 'Révoqués', value: revoked, icon: XCircle, color: 'var(--danger)', bg: 'rgba(220,38,38,0.06)' },
+          { label: 'Sur blockchain', value: anchored, icon: LinkIcon, color: 'var(--primary)', bg: 'var(--green-50)', gold: true },
         ].map((s, i) => (
           <div key={i} className={`stat-card ${s.gold ? 'gold' : ''}`}>
             <div className="stat-icon" style={{ background: s.bg }}>
@@ -73,7 +73,7 @@ export default function InstitutionDashboard() {
             <ScrollText size={28} style={{ margin: '0 auto 10px', opacity: 0.3 }} />
             <h3>Aucun diplôme créé</h3>
             <p style={{ marginTop: 8 }}>
-              <a href="/institution/diplomas" className="auth-link">Créer votre premier diplôme →</a>
+              <a href="/institution/diplomas" className="auth-link">Créer votre premier diplôme</a>
             </p>
           </div>
         ) : (
@@ -84,7 +84,7 @@ export default function InstitutionDashboard() {
             <tbody>
               {diplomas.slice(0, 5).map(d => (
                 <tr key={d.id}>
-                  <td><span className="mono" style={{ fontSize: 12, color: 'var(--gold)' }}>{d.unique_code}</span></td>
+                  <td><span className="mono" style={{ fontSize: 12, color: 'var(--primary)' }}>{d.unique_code}</span></td>
                   <td style={{ color: 'var(--text-1)' }}>{d.degree_title}</td>
                   <td>
                     <span className={`badge ${d.status === 'issued' ? 'badge-success' : d.status === 'revoked' ? 'badge-danger' : 'badge-muted'}`}>
@@ -93,7 +93,7 @@ export default function InstitutionDashboard() {
                   </td>
                   <td>
                     <span className={`badge ${d.blockchain_anchored ? 'badge-gold' : 'badge-muted'}`}>
-                      {d.blockchain_anchored ? '⛓ Ancré' : '—'}
+                      {d.blockchain_anchored ? (<><LinkIcon size={11} /> Ancré</>) : '—'}
                     </span>
                   </td>
                   <td style={{ fontSize: 12 }}>{new Date(d.created_at).toLocaleDateString('fr-FR')}</td>

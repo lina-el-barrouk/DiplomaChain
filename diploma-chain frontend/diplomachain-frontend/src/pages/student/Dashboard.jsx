@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
 import { diplomaApi, pdfApi, qrApi } from '../../api'
-import { ScrollText, Download, QrCode, CheckCircle, XCircle, Clock, Link } from 'lucide-react'
+import { ScrollText, Download, QrCode, CheckCircle, XCircle, Clock, Link as LinkIcon } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function StudentDashboard() {
@@ -25,7 +25,7 @@ export default function StudentDashboard() {
       a.download = `diplome-${code}.pdf`
       a.click()
       URL.revokeObjectURL(url)
-      toast.success('PDF téléchargé ✓')
+      toast.success('PDF téléchargé')
     } catch { toast.error('Erreur lors du téléchargement') }
   }
 
@@ -73,7 +73,7 @@ export default function StudentDashboard() {
                   <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
                     <div>
                       <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Code unique</div>
-                      <div className="mono" style={{ fontSize: 13, color: 'var(--gold)', marginTop: 2 }}>{d.unique_code}</div>
+                      <div className="mono" style={{ fontSize: 13, color: 'var(--primary)', marginTop: 2 }}>{d.unique_code}</div>
                     </div>
                     <div>
                       <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Date d'émission</div>
@@ -82,14 +82,14 @@ export default function StudentDashboard() {
                     {d.honors && (
                       <div>
                         <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Mention</div>
-                        <div style={{ fontSize: 13, color: 'var(--gold)', marginTop: 2, fontWeight: 500 }}>{d.honors}</div>
+                        <div style={{ fontSize: 13, color: 'var(--primary)', marginTop: 2, fontWeight: 500 }}>{d.honors}</div>
                       </div>
                     )}
                     <div>
                       <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Blockchain</div>
-                      <div style={{ fontSize: 13, marginTop: 2 }}>
+                      <div style={{ fontSize: 13, marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
                         {d.blockchain_anchored
-                          ? <span style={{ color: '#2ecc71' }}>⛓ Ancré sur Hedera</span>
+                          ? <span style={{ color: 'var(--success)', display: 'flex', alignItems: 'center', gap: 4 }}><LinkIcon size={12} /> Ancré sur Hedera</span>
                           : <span style={{ color: 'var(--text-3)' }}>—</span>}
                       </div>
                     </div>
@@ -110,7 +110,7 @@ export default function StudentDashboard() {
                       rel="noopener noreferrer"
                       className="btn btn-ghost btn-sm"
                     >
-                      <Link size={14} /> Vérifier
+                      <LinkIcon size={14} /> Vérifier
                     </a>
                   </div>
                 )}
@@ -131,14 +131,14 @@ export default function StudentDashboard() {
 
       {/* QR Modal */}
       {qrModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
           onClick={() => setQrModal(null)}>
-          <div className="card card-gold" style={{ padding: 32, textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+          <div className="card card-gold" style={{ padding: 32, textAlign: 'center', maxWidth: 360 }} onClick={e => e.stopPropagation()}>
             <h3 style={{ marginBottom: 16, color: 'var(--text-1)', fontFamily: 'var(--font-display)' }}>QR Code de vérification</h3>
-            <div style={{ background: 'white', padding: 16, borderRadius: 12, display: 'inline-block', marginBottom: 16 }}>
-              <img src={`data:image/png;base64,${qrModal.qr_code_base64}`} alt="QR" style={{ width: 180, height: 180, display: 'block' }} />
+            <div style={{ background: 'white', padding: 16, borderRadius: 12, display: 'inline-block', marginBottom: 16, border: '1px solid var(--border)' }}>
+              <img src={`data:image/png;base64,${qrModal.qr_code_base64}`} alt="QR Code de vérification" style={{ width: 180, height: 180, display: 'block' }} />
             </div>
-            <p className="mono" style={{ fontSize: 12, color: 'var(--gold)', marginBottom: 6 }}>{qrModal.unique_code}</p>
+            <p className="mono" style={{ fontSize: 12, color: 'var(--primary)', marginBottom: 6 }}>{qrModal.unique_code}</p>
             <p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 16 }}>Scannez pour vérifier l'authenticité</p>
             <button className="btn btn-ghost btn-sm" onClick={() => setQrModal(null)}>Fermer</button>
           </div>

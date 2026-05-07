@@ -15,12 +15,12 @@ export default function AdminDashboard() {
   }, [])
 
   const statCards = stats ? [
-    { label: 'Utilisateurs', value: stats.total_users, icon: Users, color: '#3498db', bg: 'rgba(52,152,219,0.1)' },
-    { label: 'Institutions', value: stats.total_institutions, sub: `${stats.approved_institutions} approuvées`, icon: Building2, color: '#9b59b6', bg: 'rgba(155,89,182,0.1)' },
-    { label: 'Diplômes émis', value: stats.issued_diplomas, sub: `${stats.revoked_diplomas} révoqués`, icon: ScrollText, color: '#c9a84c', bg: 'rgba(201,168,76,0.1)', gold: true },
-    { label: 'Sur blockchain', value: stats.blockchain_anchored, icon: Link, color: '#2ecc71', bg: 'rgba(46,204,113,0.1)' },
-    { label: 'Vérifications', value: stats.total_verifications, sub: `${stats.verifications_today} aujourd'hui`, icon: Eye, color: '#e67e22', bg: 'rgba(230,126,34,0.1)' },
-    { label: 'En attente', value: stats.pending_institutions, sub: 'institutions à approuver', icon: CheckCircle, color: '#e74c3c', bg: 'rgba(231,76,60,0.1)' },
+    { label: 'Utilisateurs', value: stats.total_users, icon: Users, color: 'var(--info)', bg: 'rgba(37,99,235,0.06)' },
+    { label: 'Institutions', value: stats.total_institutions, sub: `${stats.approved_institutions} approuvées`, icon: Building2, color: '#6d28d9', bg: 'rgba(109,40,217,0.06)' },
+    { label: 'Diplômes émis', value: stats.issued_diplomas, sub: `${stats.revoked_diplomas} révoqués`, icon: ScrollText, color: 'var(--primary)', bg: 'var(--green-50)', gold: true },
+    { label: 'Sur blockchain', value: stats.blockchain_anchored, icon: Link, color: 'var(--success)', bg: 'rgba(22,163,74,0.06)' },
+    { label: 'Vérifications', value: stats.total_verifications, sub: `${stats.verifications_today} aujourd'hui`, icon: Eye, color: 'var(--warning)', bg: 'rgba(217,119,6,0.06)' },
+    { label: 'En attente', value: stats.pending_institutions, sub: 'institutions à approuver', icon: CheckCircle, color: 'var(--danger)', bg: 'rgba(220,38,38,0.06)' },
   ] : []
 
   return (
@@ -52,12 +52,13 @@ export default function AdminDashboard() {
           <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 16, color: 'var(--text-1)' }}>Accès rapides</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {[
-              { label: '🏛 Approuver des institutions', path: '/admin/institutions' },
-              { label: '🎓 Valider des étudiants', path: '/admin/students' },
-              { label: '👥 Gérer les utilisateurs', path: '/admin/users' },
-              { label: '📋 Voir les logs d\'audit', path: '/admin/audit' },
+              { label: 'Approuver des institutions', path: '/admin/institutions', icon: Building2 },
+              { label: 'Valider des étudiants', path: '/admin/students', icon: GraduationCap },
+              { label: 'Gérer les utilisateurs', path: '/admin/users', icon: Users },
+              { label: 'Voir les logs d\'audit', path: '/admin/audit', icon: ScrollText },
             ].map(l => (
-              <a key={l.path} href={l.path} style={{ fontSize: 14, color: 'var(--text-2)', textDecoration: 'none', padding: '8px 12px', borderRadius: 6, background: 'var(--bg-3)' }}>
+              <a key={l.path} href={l.path} style={{ fontSize: 14, color: 'var(--text-2)', textDecoration: 'none', padding: '10px 14px', borderRadius: 8, background: 'var(--bg-3)', display: 'flex', alignItems: 'center', gap: 10, transition: 'all 0.2s' }}>
+                <l.icon size={16} style={{ color: 'var(--primary)' }} />
                 {l.label}
               </a>
             ))}
@@ -77,8 +78,8 @@ export default function AdminDashboard() {
                 <span style={{ fontSize: 13, color: 'var(--text-2)' }}>{s.label}</span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   {s.sub && <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{s.sub}</span>}
-                  <span style={{ fontSize: 12, color: s.ok ? '#2ecc71' : '#f39c12', fontWeight: 500 }}>
-                    {s.ok ? '● Actif' : '● Partiel'}
+                  <span style={{ fontSize: 12, color: s.ok ? 'var(--success)' : 'var(--warning)', fontWeight: 500 }}>
+                    {s.ok ? 'Actif' : 'Partiel'}
                   </span>
                 </div>
               </div>

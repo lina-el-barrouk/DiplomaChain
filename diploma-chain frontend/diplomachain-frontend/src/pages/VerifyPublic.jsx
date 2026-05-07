@@ -88,7 +88,7 @@ export default function VerifyPublic() {
               }
               <div>
                 <div className="result-status">
-                  {result.valid ? '✓ Diplôme authentique' : result.reason?.includes('révoqué') ? '✗ Diplôme révoqué' : '✗ Diplôme invalide'}
+                  {result.valid ? 'Diplôme authentique' : result.reason?.includes('révoqué') ? 'Diplôme révoqué' : 'Diplôme invalide'}
                 </div>
                 {result.reason && <div className="result-reason">{result.reason}</div>}
               </div>
@@ -105,8 +105,8 @@ export default function VerifyPublic() {
                           <span style={{
                             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                             width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
-                            background: 'linear-gradient(135deg, var(--gold), #b8922e)',
-                            fontSize: 11, fontWeight: 700, color: '#000',
+                            background: 'linear-gradient(135deg, var(--green-600), var(--green-800))',
+                            fontSize: 11, fontWeight: 700, color: '#fff',
                           }}>
                             {result.student_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                           </span>
@@ -147,7 +147,11 @@ export default function VerifyPublic() {
                     <span>Ancrage Blockchain Hedera</span>
                   </div>
                   <div className={`blockchain-status ${result.blockchain_anchored ? 'anchored' : 'not-anchored'}`}>
-                    {result.blockchain_anchored ? '⛓ Ancré sur Hedera Hashgraph' : '⚠ Non ancré sur blockchain'}
+                    {result.blockchain_anchored ? (
+                      <><LinkIcon size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />Ancré sur Hedera Hashgraph</>
+                    ) : (
+                      <><AlertCircle size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />Non ancré sur blockchain</>
+                    )}
                   </div>
                   {result.hedera_transaction_id && (
                     <div className="blockchain-tx mono">{result.hedera_transaction_id}</div>

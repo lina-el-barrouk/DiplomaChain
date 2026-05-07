@@ -1,5 +1,5 @@
 import { useLocation, Link } from "react-router-dom";
-import { Clock, LogOut } from "lucide-react";
+import { Clock, LogOut, ArrowLeft } from "lucide-react";
 
 export default function Pending() {
   const { state } = useLocation();
@@ -10,7 +10,7 @@ export default function Pending() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "var(--bg-0)",
+        background: "linear-gradient(160deg, #ffffff 0%, var(--bg-0) 40%, var(--green-50) 100%)",
         padding: 24,
       }}
     >
@@ -27,7 +27,7 @@ export default function Pending() {
           style={{
             width: 64,
             height: 64,
-            background: "rgba(243,156,18,0.1)",
+            background: "rgba(217, 119, 6, 0.08)",
             borderRadius: "50%",
             display: "flex",
             alignItems: "center",
@@ -35,7 +35,7 @@ export default function Pending() {
             margin: "0 auto 20px",
           }}
         >
-          <Clock size={28} style={{ color: "#f39c12" }} />
+          <Clock size={28} style={{ color: "var(--warning)" }} />
         </div>
         <h2
           style={{
@@ -66,16 +66,20 @@ export default function Pending() {
             marginBottom: 24,
             fontSize: 13,
             color: "var(--text-3)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
           }}
         >
-          ⏱ Délai habituel : 24 à 48 heures
+          <Clock size={14} /> Délai habituel : 24 à 48 heures
         </div>
         <Link
           to="/"
           className="btn btn-ghost"
           style={{ width: "100%", justifyContent: "center" }}
         >
-          <LogOut size={15} /> Retour à l'accueil
+          <ArrowLeft size={15} /> Retour à l'accueil
         </Link>
       </div>
     </div>

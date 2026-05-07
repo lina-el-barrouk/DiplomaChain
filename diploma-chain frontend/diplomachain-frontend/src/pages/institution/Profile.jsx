@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
 import { institutionApi } from '../../api'
-import { Building2, Save } from 'lucide-react'
+import { Building2, Save, CheckCircle, Clock } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function InstitutionProfile() {
@@ -29,11 +29,11 @@ export default function InstitutionProfile() {
         const { data } = await institutionApi.create(form)
         setProfile(data)
         setCreating(false)
-        toast.success('Profil institution créé ✓')
+        toast.success('Profil institution créé avec succès')
       } else {
         const { data } = await institutionApi.updateMe(form)
         setProfile(data)
-        toast.success('Profil mis à jour ✓')
+        toast.success('Profil mis à jour')
       }
     } catch (e) {
       toast.error(e.response?.data?.detail || 'Erreur')
@@ -54,7 +54,7 @@ export default function InstitutionProfile() {
       {profile && (
         <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
           <span className={`badge ${profile.is_approved ? 'badge-success' : 'badge-muted'}`} style={{ fontSize: 13, padding: '6px 14px' }}>
-            {profile.is_approved ? '✓ Institution approuvée' : '⏳ En attente d\'approbation'}
+            {profile.is_approved ? <><CheckCircle size={12} /> Institution approuvée</> : <><Clock size={12} /> En attente d'approbation</>}
           </span>
         </div>
       )}
@@ -62,8 +62,8 @@ export default function InstitutionProfile() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
         <div className="card card-gold">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-            <div style={{ width: 40, height: 40, background: 'var(--gold-glow)', border: '1px solid var(--border-strong)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Building2 size={20} style={{ color: 'var(--gold)' }} />
+            <div style={{ width: 40, height: 40, background: 'var(--green-50)', border: '1px solid var(--border-strong)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Building2 size={20} style={{ color: 'var(--primary)' }} />
             </div>
             <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-1)' }}>
               {creating ? 'Créer mon profil' : 'Informations'}
@@ -102,7 +102,7 @@ export default function InstitutionProfile() {
               {[
                 { label: 'ID Institution', value: profile.id, mono: true },
                 { label: 'Créé le', value: new Date(profile.created_at).toLocaleDateString('fr-FR') },
-                { label: 'Statut', value: profile.is_approved ? 'Approuvée ✓' : 'En attente ⏳' },
+                { label: 'Statut', value: profile.is_approved ? 'Approuvée' : 'En attente' },
               ].map(f => (
                 <div key={f.label}>
                   <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>{f.label}</div>
