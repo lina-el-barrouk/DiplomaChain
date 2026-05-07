@@ -35,16 +35,41 @@ export default function InstitutionDiplomas() {
 
   useEffect(() => { load() }, [])
 
-  const create = async (e) => {
-    e.preventDefault()
-    try {
-      await diplomaApi.create({ ...form, graduation_date: new Date(form.graduation_date).toISOString() })
-      toast.success('Diplôme créé ✓')
-      setShowCreate(false)
-      setForm({ massar_code: '', degree_title: '', field_of_study: '', graduation_date: '', honors: '' })
-      load()
-    } catch (e) { toast.error(e.response?.data?.detail || 'Erreur lors de la création') }
+const create = async (e) => {
+  e.preventDefault();
+  try {
+    // On s'assure que les dates et les champs vides sont bien gérés
+    const payload = {
+      ...form,
+      graduation_date: new Date(form.graduation_date).toISOString(),
+      // Si un champ est vide, on peut envoyer null ou le trim()
+      massar_code: form.massar_code.trim(),
+      degree_title: form.degree_title.trim(),
+      field_of_study: form.field_of_study.trim()
+    };
+
+    await diplomaApi.create(payload);
+    toast.success('Diplôme créé ✓');
+    setShowCreate(false);
+    setForm({ massar_code: '', degree_title: '', field_of_study: '', graduation_date: '', honors: '' });
+    load();
+  } catch (err) {
+    console.error("Détail de l'erreur 422 :", err.response?.data?.detail);
+    
+    // On extrait le message d'erreur pour éviter de faire planter React
+    let errorMsg = 'Erreur lors de la création';
+    const detail = err.response?.data?.detail;
+    
+    if (Array.isArray(detail)) {
+      // Si c'est une erreur de validation Pydantic, on prend le premier message
+      errorMsg = `${detail[0].loc[1]} : ${detail[0].msg}`;
+    } else if (typeof detail === 'string') {
+      errorMsg = detail;
+    }
+    
+    toast.error(errorMsg);
   }
+}
 
   const issue = async (id) => {
     try { await diplomaApi.issue(id); toast.success('Diplôme émis ⛓'); load() }
